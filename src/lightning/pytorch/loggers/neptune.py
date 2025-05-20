@@ -1124,7 +1124,7 @@ class NeptuneScaleLogger(Logger):
         return model_path.replace(os.sep, "/")
 
     @classmethod
-    def _get_full_model_names_from_exp_structure(cls, exp_structure: dict[str, Any], namespace: str) -> set[None]:
+    def _get_full_model_names_from_exp_structure(cls, exp_structure: dict[str, Any], namespace: str) -> set[str]:
         """Returns all paths to properties which were already logged in `namespace`"""
         structure_keys: list[str] = namespace.split(cls.LOGGER_JOIN_CHAR)
         for key in structure_keys:

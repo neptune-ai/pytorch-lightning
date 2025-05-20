@@ -531,9 +531,6 @@ def test_neptune_scale_logger_after_save_checkpoint(neptune_scale_logger):
             best_model_score=None,
         )
 
-        mock_file = neptune_scale_logger.types.File
-        mock_file.reset_mock()
-        mock_file.side_effect = mock.Mock()
         logger.after_save_checkpoint(cb_mock)
 
         run_instance_mock.__getitem__.assert_any_call(f"{model_key_prefix}/checkpoints/model1")
