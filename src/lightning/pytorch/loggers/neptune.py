@@ -669,18 +669,18 @@ class NeptuneScaleLogger(Logger):
         neptune_logger.run.log_configs(data={"your/metadata/structure": metadata})
         neptune_logger.run.add_tags(["tag1", "tag2"])
 
-    **Log model checkpoints**
+    **Log model checkpoint paths**
 
     If you have :class:`~lightning.pytorch.callbacks.ModelCheckpoint` configured,
-    the Neptune logger automatically logs model checkpoints.
-    Model weights will be uploaded to the "model/checkpoints" namespace in the Neptune run.
+    the Neptune logger can log model checkpoint paths.
+    Paths will be logged to the "model/checkpoints" namespace in the Neptune run.
     You can disable this option with:
 
     .. code-block:: python
 
         neptune_logger = NeptuneScaleLogger(log_model_checkpoints=False)
 
-    Note: All model checkpoints will be uploaded. ``save_last`` and ``save_top_k`` are currently not supported.
+    Note: All model checkpoint paths will be logged. ``save_last`` and ``save_top_k`` are currently not supported.
 
     **Pass additional parameters to the Neptune run**
 
@@ -743,9 +743,9 @@ class NeptuneScaleLogger(Logger):
         run: Optional. Default is ``None``. A Neptune ``Run`` object.
             If specified, this existing run will be used for logging, instead of a new run being created.
         prefix: Optional. Default is ``"training"``. Root namespace for all metadata logging.
-        log_model_checkpoints: Optional. Default is ``True``. Log model checkpoints to Neptune.
+        log_model_checkpoints: Optional. Default is ``True``. Log model checkpoint paths to Neptune.
             Works only if ``ModelCheckpoint`` is passed to the ``Trainer``.
-            NOTE: All model checkpoints will be uploaded.
+            NOTE: All model checkpoint paths will be logged.
             ``save_last`` and ``save_top_k`` are currently not supported.
         neptune_run_kwargs: Additional arguments like ``creation_time``, ``log_directory``,
             ``fork_run_id``, ``fork_step``, ``*_callback``, etc. used when a run is created.
@@ -1050,7 +1050,7 @@ class NeptuneScaleLogger(Logger):
     @override
     @rank_zero_only
     def after_save_checkpoint(self, checkpoint_callback: Checkpoint) -> None:
-        """Automatically log checkpointed model. Called after model checkpoint callback saves a new checkpoint.
+        """Automatically log checkpointed model's path. Called after model checkpoint callback saves a new checkpoint.
 
         Args:
             checkpoint_callback: the model checkpoint callback instance
@@ -1066,7 +1066,7 @@ class NeptuneScaleLogger(Logger):
         if hasattr(checkpoint_callback, "last_model_path") and checkpoint_callback.last_model_path:
             model_last_name = self._get_full_model_name(checkpoint_callback.last_model_path, checkpoint_callback)
             file_names.add(model_last_name)
-            self.run.assign_files({
+            self.run.log_configs({
                 f"{checkpoints_namespace}/{model_last_name}": checkpoint_callback.last_model_path,
             })
 
@@ -1075,7 +1075,7 @@ class NeptuneScaleLogger(Logger):
             for key in checkpoint_callback.best_k_models:
                 model_name = self._get_full_model_name(key, checkpoint_callback)
                 file_names.add(model_name)
-                self.run.assign_files({
+                self.run.log_configs({
                     f"{checkpoints_namespace}/{model_name}": key,
                 })
 
@@ -1087,7 +1087,7 @@ class NeptuneScaleLogger(Logger):
 
             model_name = self._get_full_model_name(checkpoint_callback.best_model_path, checkpoint_callback)
             file_names.add(model_name)
-            self.run.assign_files({
+            self.run.log_configs({
                 f"{checkpoints_namespace}/{model_name}": checkpoint_callback.best_model_path,
             })
 

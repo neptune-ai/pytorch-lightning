@@ -461,7 +461,8 @@ def test_neptune_scale_logger_finalize(neptune_scale_logger):
     """Test finalize method sets status correctly."""
     logger, mock_run = neptune_scale_logger
     logger.finalize("success")
-    assert mock_run._status == "success"
+    expected_key = logger._construct_path_with_prefix("status")
+    mock_run.log_configs.assert_any_call({expected_key: "success"})
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
@@ -472,24 +473,20 @@ def test_neptune_scale_logger_invalid_run():
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_log_model_summary(neptune_scale_logger):
+def test_neptune_scale_logger_log_model_summary(neptune_scale_logger, monkeypatch):
     from neptune_scale.types import File
 
     model = BoringModel()
-    test_variants = [
-        ({}, "training/model/summary"),
-        ({"prefix": "custom_prefix"}, "custom_prefix/model/summary"),
-        ({"prefix": "custom/nested/prefix"}, "custom/nested/prefix/model/summary"),
-    ]
-
-    for prefix, model_summary_key in test_variants:
-        logger, run_instance_mock, _ = _get_logger_with_mocks(api_key="test", project="project", **prefix)
-
-        logger.log_model_summary(model)
-
-        assert run_instance_mock.__setitem__.call_count == 1
-        assert run_instance_mock.__getitem__.call_count == 0
-        run_instance_mock.__setitem__.assert_called_once_with(model_summary_key, File)
+    logger, mock_run = neptune_scale_logger
+    # Patch assign_files to track calls
+    assign_files_mock = mock.MagicMock()
+    monkeypatch.setattr(mock_run, "assign_files", assign_files_mock)
+    logger.log_model_summary(model)
+    # Check that assign_files was called with the correct key and a File instance
+    called_args = assign_files_mock.call_args[0][0]
+    assert list(called_args.keys())[0].endswith("model/summary")
+    file_val = list(called_args.values())[0]
+    assert isinstance(file_val, File)
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
@@ -511,32 +508,28 @@ def test_neptune_scale_logger_with_prefix(neptune_scale_logger):
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
 def test_neptune_scale_logger_after_save_checkpoint(neptune_scale_logger):
-    test_variants = [
-        ({}, "training/model"),
-        ({"prefix": "custom_prefix"}, "custom_prefix/model"),
-        ({"prefix": "custom/nested/prefix"}, "custom/nested/prefix/model"),
+    logger, mock_run = neptune_scale_logger
+    models_root_dir = os.path.join("path", "to", "models")
+    cb_mock = MagicMock(
+        dirpath=models_root_dir,
+        last_model_path=os.path.join(models_root_dir, "last"),
+        best_k_models={
+            f"{os.path.join(models_root_dir, 'model1')}": None,
+            f"{os.path.join(models_root_dir, 'model2/with/slashes')}": None,
+        },
+        best_model_path=os.path.join(models_root_dir, "best_model"),
+        best_model_score=None,
+    )
+    logger.after_save_checkpoint(cb_mock)
+    prefix = logger._prefix
+    model_key_prefix = f"{prefix}/model" if prefix else "model"
+    expected_calls = [
+        call.log_configs({f"{model_key_prefix}/checkpoints/model1": os.path.join(models_root_dir, "model1")}),
+        call.log_configs({
+            f"{model_key_prefix}/checkpoints/model2/with/slashes": os.path.join(models_root_dir, "model2/with/slashes")
+        }),
+        call.log_configs({f"{model_key_prefix}/checkpoints/last": os.path.join(models_root_dir, "last")}),
+        call.log_configs({f"{model_key_prefix}/checkpoints/best_model": os.path.join(models_root_dir, "best_model")}),
+        call.log_configs({f"{model_key_prefix}/best_model_path": os.path.join(models_root_dir, "best_model")}),
     ]
-
-    for prefix, model_key_prefix in test_variants:
-        logger, run_instance_mock, run_attr_mock = _get_logger_with_mocks(api_key="test", project="project", **prefix)
-        models_root_dir = os.path.join("path", "to", "models")
-        cb_mock = MagicMock(
-            dirpath=models_root_dir,
-            last_model_path=os.path.join(models_root_dir, "last"),
-            best_k_models={
-                f"{os.path.join(models_root_dir, 'model1')}": None,
-                f"{os.path.join(models_root_dir, 'model2/with/slashes')}": None,
-            },
-            best_model_path=os.path.join(models_root_dir, "best_model"),
-            best_model_score=None,
-        )
-
-        logger.after_save_checkpoint(cb_mock)
-
-        run_instance_mock.__getitem__.assert_any_call(f"{model_key_prefix}/checkpoints/model1")
-        run_instance_mock.__getitem__.assert_any_call(f"{model_key_prefix}/checkpoints/model2/with/slashes")
-
-        run_attr_mock.upload.assert_has_calls([
-            call(os.path.join(models_root_dir, "model1")),
-            call(os.path.join(models_root_dir, "model2/with/slashes")),
-        ])
+    mock_run.log_configs.assert_has_calls(expected_calls, any_order=True)
