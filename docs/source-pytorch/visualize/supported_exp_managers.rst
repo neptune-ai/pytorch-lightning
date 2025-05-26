@@ -119,8 +119,8 @@ Configure the logger and pass it to the :class:`~lightning.pytorch.trainer.train
     from lightning.pytorch.loggers import NeptuneScaleLogger
 
     neptune_scale_logger = NeptuneScaleLogger(
-        api_key=<YOUR_NEPTUNE_SCALE_API_KEY>,  # replace with your own
-        project=<YOUR_NEPTUNE_SCALE_WORKSPACE>/<YOUR_NEPTUNE_SCALE_PROJECT>,  # replace with your own
+        api_key="<YOUR_NEPTUNE_SCALE_API_KEY>",  # replace with your own
+        project="<YOUR_NEPTUNE_SCALE_WORKSPACE>/<YOUR_NEPTUNE_SCALE_PROJECT>",  # replace with your own
     )
     trainer = Trainer(logger=neptune_scale_logger)
 
