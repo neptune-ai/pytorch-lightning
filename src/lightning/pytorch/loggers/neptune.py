@@ -1111,7 +1111,7 @@ class NeptuneScaleLogger(Logger):
             })
 
     @staticmethod
-    def _get_full_model_name(model_path: str, checkpoint_callback: Checkpoint) -> None:
+    def _get_full_model_name(model_path: str, checkpoint_callback: Checkpoint) -> str:
         """Returns model name which is string `model_path` appended to `checkpoint_callback.dirpath`."""
         if hasattr(checkpoint_callback, "dirpath"):
             model_path = os.path.normpath(model_path)
