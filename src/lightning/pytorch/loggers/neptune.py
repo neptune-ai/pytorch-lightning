@@ -42,7 +42,7 @@ from lightning.pytorch.utilities.rank_zero import rank_zero_only
 
 log = logging.getLogger(__name__)
 
-_NEPTUNE_SCALE_AVAILABLE = RequirementCache("neptune-scale")
+_NEPTUNE_SCALE_AVAILABLE = RequirementCache("neptune-scale>=0.18.0")
 _NEPTUNE_AVAILABLE = RequirementCache("neptune>=1.0")
 
 if TYPE_CHECKING:
@@ -963,7 +963,6 @@ class NeptuneScaleLogger(Logger):
             neptune_scale_logger.log_hyperparams(PARAMS)
 
         """
-        from datetime import datetime
 
         params = _convert_params(params)
         params = _sanitize_callable_params(params)
@@ -971,25 +970,7 @@ class NeptuneScaleLogger(Logger):
         parameters_key = self.PARAMETERS_KEY
         parameters_key = self._construct_path_with_prefix(parameters_key)
 
-        allowed_datatypes = [int, float, str, datetime, bool, list, set]
-
-        def flatten(d: dict, prefix: str = "") -> dict[str, Any]:
-            """Flatten a nested dictionary by concatenating keys with '/'."""
-            flattened = {}
-            for key, value in d.items():
-                new_key = f"{prefix}/{key}" if prefix else key
-                if isinstance(value, dict):
-                    flattened.update(flatten(value, new_key))
-                elif type(value) in allowed_datatypes:
-                    flattened[new_key] = value
-                else:
-                    flattened[new_key] = str(value)
-            return flattened
-
-        flattened = flatten(params)
-
-        batched_configs = {f"{parameters_key}/{key}": value for key, value in flattened.items()}
-        self.run.log_configs(batched_configs)
+        self.run.log_configs({parameters_key: params}, flatten=True, cast_unsupported=True)
 
     @override
     @rank_zero_only
