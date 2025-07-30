@@ -802,15 +802,15 @@ class NeptuneScaleLogger(Logger):
 
         if self._run_instance is not None:
             self._retrieve_run_data()
+        # Don't create the run during __init__ - let the run property handle it lazily (for DDP-spawn support)
+        # else:
+        #     from neptune_scale import Run
 
-        else:
-            from neptune_scale import Run
+        #     self._run_instance = Run(**self._neptune_init_args)
 
-            self._run_instance = Run(**self._neptune_init_args)
+        # root_obj = self._run_instance
 
-        root_obj = self._run_instance
-
-        root_obj.log_configs(data={_INTEGRATION_VERSION_KEY: pl.__version__})
+        # root_obj.log_configs(data={_INTEGRATION_VERSION_KEY: pl.__version__})
 
     def _retrieve_run_data(self) -> None:
         assert self._run_instance is not None
@@ -881,7 +881,16 @@ class NeptuneScaleLogger(Logger):
         from neptune_scale import Run
 
         self.__dict__ = state
-        self._run_instance = Run(**self._neptune_init_args)
+        # Only initialize Neptune run on rank 0 to avoid multiprocessing conflicts
+        if rank_zero_only.rank == 0:
+            try:
+                self._run_instance = Run(**self._neptune_init_args)
+            except Exception as e:
+                # If Neptune fails to initialize in DDP context, set to None
+                # This prevents multiprocessing conflicts while allowing training to continue
+                self._run_instance = None
+        else:
+            self._run_instance = None
 
     @property
     @rank_zero_experiment
@@ -914,11 +923,17 @@ class NeptuneScaleLogger(Logger):
         from neptune_scale import Run
 
         if not self._run_instance:
-            self._run_instance = Run(**self._neptune_init_args)
-            self._retrieve_run_data()
-            # make sure that we've log integration version for newly created
-            self._run_instance.log_configs({_INTEGRATION_VERSION_KEY: pl.__version__})
+            # Only initialize on rank 0 to avoid multiprocessing conflicts
+            if rank_zero_only.rank == 0:
+                self._run_instance = Run(**self._neptune_init_args)
+                self._retrieve_run_data()
+                # make sure that we've log integration version for newly created
+                self._run_instance.log_configs({_INTEGRATION_VERSION_KEY: pl.__version__})
 
+        # For non-rank-0 processes, return None since no run was created
+        if self._run_instance is None and rank_zero_only.rank != 0:
+            return None
+        
         return self._run_instance
 
     @override
@@ -993,12 +1008,12 @@ class NeptuneScaleLogger(Logger):
     @override
     @rank_zero_only
     def finalize(self, status: str) -> None:
-        if not self._run_instance:
-            # When using multiprocessing, finalize() should be a no-op on the main process, as no experiment has been
-            # initialized there
-            return
-        if status:
-            self.run.log_configs({self._construct_path_with_prefix("status"): status})
+        # Only finalize if we have a run instance (rank 0)
+        if self._run_instance is not None:
+            if status:
+                self.run.log_configs({self._construct_path_with_prefix("status"): status})
+            # Close the run
+            self._run_instance.close()
 
         super().finalize(status)
 
