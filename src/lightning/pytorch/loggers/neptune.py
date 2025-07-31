@@ -820,6 +820,26 @@ class NeptuneScaleLogger(Logger):
         self._run_id = root_obj._run_id
         self._experiment_name = root_obj._experiment_name
 
+    def _handle_neptune_sync_error(self, error: RuntimeError) -> None:
+        """Handle Neptune Sync error in a multiprocessing context.
+        
+        This method checks if the RuntimeError is the specific Neptune sync process error
+        and handles it appropriately by setting the run instance to None and logging a debug message.
+        If it's a different RuntimeError, it re-raises it.
+        
+        Args:
+            error: The RuntimeError that was caught
+        """
+        import traceback
+        tb = traceback.format_exc()
+        if "self._sync_process.start()" in tb and "neptune_scale" in tb:
+            # This is the specific Neptune Scale sync process error we want to catch
+            log.debug(f"Failed to initialize Neptune run: {error}")
+            self._run_instance = None
+        else:
+            # Re-raise other RuntimeErrors
+            raise
+
     @property
     def _neptune_init_args(self) -> dict:
         args: dict = {}
@@ -886,16 +906,7 @@ class NeptuneScaleLogger(Logger):
             try:
                 self._run_instance = Run(**self._neptune_init_args)
             except RuntimeError as e:
-                # Check if this is the specific Neptune Scale sync process error
-                import traceback
-                tb = traceback.format_exc()
-                if "self._sync_process.start()" in tb and "neptune_scale" in tb:
-                    # This is the specific Neptune Scale sync process error we want to catch
-                    log.debug(f"Failed to initialize Neptune run: {e}")
-                    self._run_instance = None
-                else:
-                    # Re-raise other RuntimeErrors
-                    raise
+                self._handle_neptune_sync_error(e)
         else:
             self._run_instance = None
 
@@ -937,16 +948,7 @@ class NeptuneScaleLogger(Logger):
                 # make sure that we log integration version for newly created run
                 self._run_instance.log_configs({_INTEGRATION_VERSION_KEY: pl.__version__})
             except RuntimeError as e:
-                # Check if this is the specific Neptune Scale sync process error
-                import traceback
-                tb = traceback.format_exc()
-                if "self._sync_process.start()" in tb and "neptune_scale" in tb:
-                    # This is the specific Neptune Scale sync process error we want to catch
-                    log.debug(f"Failed to initialize Neptune run: {e}")
-                    self._run_instance = None
-                else:
-                    # Re-raise other RuntimeErrors
-                    raise
+                self._handle_neptune_sync_error(e)
 
 
         # For non-rank-0 processes, return None since no run was created
