@@ -885,10 +885,17 @@ class NeptuneScaleLogger(Logger):
         if rank_zero_only.rank == 0:
             try:
                 self._run_instance = Run(**self._neptune_init_args)
-            except Exception as e:
-                # If Neptune fails to initialize in DDP context, set to None
-                # This prevents multiprocessing conflicts while allowing training to continue
-                self._run_instance = None
+            except RuntimeError as e:
+                # Check if this is the specific Neptune Scale sync process error
+                import traceback
+                tb = traceback.format_exc()
+                if "self._sync_process.start()" in tb and "neptune_scale" in tb:
+                    # This is the specific Neptune Scale sync process error we want to catch
+                    log.debug(f"Failed to initialize Neptune run: {e}")
+                    self._run_instance = None
+                else:
+                    # Re-raise other RuntimeErrors
+                    raise
         else:
             self._run_instance = None
 
@@ -922,16 +929,28 @@ class NeptuneScaleLogger(Logger):
         """
         from neptune_scale import Run
 
-        if not self._run_instance:
+        if not self._run_instance and rank_zero_only.rank == 0:
             # Only initialize on rank 0 to avoid multiprocessing conflicts
-            if rank_zero_only.rank == 0:
+            try:
                 self._run_instance = Run(**self._neptune_init_args)
                 self._retrieve_run_data()
-                # make sure that we've log integration version for newly created
+                # make sure that we log integration version for newly created run
                 self._run_instance.log_configs({_INTEGRATION_VERSION_KEY: pl.__version__})
+            except RuntimeError as e:
+                # Check if this is the specific Neptune Scale sync process error
+                import traceback
+                tb = traceback.format_exc()
+                if "self._sync_process.start()" in tb and "neptune_scale" in tb:
+                    # This is the specific Neptune Scale sync process error we want to catch
+                    log.debug(f"Failed to initialize Neptune run: {e}")
+                    self._run_instance = None
+                else:
+                    # Re-raise other RuntimeErrors
+                    raise
+
 
         # For non-rank-0 processes, return None since no run was created
-        if self._run_instance is None and rank_zero_only.rank != 0:
+        if rank_zero_only.rank != 0:
             return None
         
         return self._run_instance
