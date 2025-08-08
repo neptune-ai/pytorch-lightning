@@ -81,20 +81,81 @@ trainer = Trainer(
 )
 ```
 
-### 4. Use Lightning's logging methods
+### 4. Log metadata to Neptune
 
+With the Neptune integration, you can combine the default PyTorch Lightning logging methods with the Neptune methods and capabilities.
+
+#### Use Lightning's logging methods
 Use `self.log()` in your Lightning module as usual - everything will be automatically logged to Neptune Scale.
 
-> [!WARNING] Checkpoint uploads
-> - `NeptuneScaleLogger` logs the path to model checkpoints instead of uploading the checkpoints themselves to Neptune.
-> - Paths to all checkpoints are logged irrespective of `save_last` and `save_top_k` `ModelCheckpoint()` parameters.
+#### Use Neptune's logging methods
+In addition to the default logging methods, you can use the Neptune [Run](https://docs.neptune.ai/run) methods to log more metadata types. You can also use the Neptune methods outside of the training loop.
 
-> [!NOTE] Accessing Neptune run
-> To access the underlying Neptune run, you can use either `neptune_scale_logger.experiment` or `neptune_scale_logger.run` attributes. You can then use Neptune specific methods like `log_metrics()` and `log_configs()` directly on the underlying run, outside of the training loop.
+To access the Neptune run directly, use the `neptune_scale_logger.run` reference:
 
+```python
+neptune_scale_logger.run.assign_files({"dataset/data_sample": "sample_data.csv"})
+```
 
-> [!TIP] Examples   
-> Refer to our example notebook to see how this works in practice: [Neptune + PyTorch Lightning Example](https://github.com/neptune-ai/scale-examples/blob/37e83854b31377b77e3d6dfae4ffeb39e7057510/integrations-and-supported-tools/pytorch-lightning/notebooks/Neptune_PyTorch_Lightning.ipynb)
+You can also use the `neptune_scale_logger.run` reference to log outside the prefix passed to `NeptuneScaleLogger`.
+
+#### Add tags
+Use `tags` to identify and organize your runs. Add tags with the `neptune_scale_logger.run` reference:
+
+```python
+neptune_scale_logger.run.add_tags(["notebook", "lightning"])
+```
+
+#### Log hyperparameters
+To log hyperparameters, use the standard log_hyperparams() method from the PyTorch Lightning logger:
+
+```python
+PARAMS = {
+    "batch_size": 64,
+    "lr": 0.07,
+    ...
+}
+neptune_scale_logger.log_hyperparams(PARAMS)
+```
+
+Hyperparameters are logged under the `<prefix>/hyperparams` namespace. To log outside the prefix, or to use Neptune's automatic casting, use the Neptune's [`log_configs()`](https://docs.neptune.ai/run/log_configs) method on the Neptune run:
+
+```python
+neptune_scale_logger.run.log_configs(
+    data={
+        "data/batch_size": 64,
+        "model/optimizer/name": "adam",
+        "model/optimizer/lr": 0.07,
+        "model/optimizer/decay_factor": 0.97,
+        "model/tokenizer/name": "bert-base-uncased",
+    },
+)
+```
+
+#### Log model checkpoint paths
+If you have the `ModelCheckpoint` callback configured, you can log the paths to model checkpoints. Note that:
+
+- All checkpoint paths are logged. The `save_last` and `save_top_k` parameters aren't supported.
+- Neptune Scale logger doesn't upload the checkpoints to Neptune.
+
+To disable logging of checkpoint paths, set the `log_model_checkpoints` init parameter to `False`:
+
+```python
+neptune_scale_logger = NeptuneScaleLogger(log_model_checkpoints=False)
+```
+
+#### Log model summary
+To log a text file with the model summary, use:
+
+```python
+model = LitModel()
+neptune_scale_logger.log_model_summary(model=model, max_depth=-1)
+```
+
+## Examples
+- Refer to our example Colab notebook to see how this works in practice: [Neptune + PyTorch Lightning Notebook](https://colab.research.google.com/github/neptune-ai/scale-examples/blob/lb/pytorch-lightning/integrations-and-supported-tools/pytorch-lightning/notebooks/Neptune_PyTorch_Lightning.ipynb)
+- Play with an interactive example: [Neptune + PyTorch Lightning Example](https://scale.neptune.ai/o/examples/org/pytorch-lightning/runs/details?viewId=9ea6121c-42a7-4ece-83b2-c591044837e7&detailsTab=dashboard&dashboardId=9f3b0e0b-90ba-4706-a109-c8ffd8443e50&runIdentificationKey=lightning-experiment&type=experiment&experimentsOnly=true&runsLineage=FULL&lbViewUnpacked=true&sortBy=%5B%22sys%2Fcreation_time%22%5D&sortFieldType=%5B%22datetime%22%5D&sortFieldAggregationMode=%5B%22auto%22%5D&sortDirection=%5B%22descending%22%5D&experimentOnly=true)
+
 
 ## Updating the integration
 
