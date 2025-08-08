@@ -104,7 +104,7 @@ Updates to this integration are merged to the `master` branch of the fork rather
 
 Turn on notifications for all activity to be notified when changes have been merged:
 
-![GitHub Notifications](https://github.com/user-attachments/assets/59daca10-5bd2-47df-92da-d47b40f3bb1f)
+![GitHub Notifications](https://neptune.ai/wp-content/uploads/2025/08/GH_notifications.png)
 
 ### 2. Update installation
 
