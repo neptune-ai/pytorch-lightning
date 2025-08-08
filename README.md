@@ -1,9 +1,9 @@
-# Neptune Scale Logger for PyTorch Lightning
+# Neptune Logger for PyTorch Lightning
 
-[![PyTorch Lightning](https://img.shields.io/badge/PyTorch%20Lightning-2.5.1rc2-blue)](https://lightning.ai/)
-[![Neptune Scale](https://img.shields.io/badge/Neptune%20Scale-%3E%3D0.18.0-orange)](https://neptune.ai/)
+[![PyTorch Lightning](https://img.shields.io/badge/PyTorch%20Lightning-2.5.1rc2-blue)](https://github.com/Lightning-AI/pytorch-lightning)
+[![Neptune Scale](https://img.shields.io/badge/Neptune%20Scale-%3E%3D0.18.0-orange)](https://github.com/neptune-ai/neptune-client-scale)
 
-This integration allows you to log your PyTorch Lightning training runs to Neptune Scale, providing seamless experiment tracking.
+This integration allows you to log your PyTorch Lightning training runs to Neptune 3.x, providing seamless experiment tracking.
 
 ## Changelog
 
@@ -15,10 +15,10 @@ This integration allows you to log your PyTorch Lightning training runs to Neptu
 
 ## Installation
 
-> [!WARNING] Prerequisites
-> This integration works only with `neptune-scale>=0.18.0`
+> [!IMPORTANT]
+> This integration works only with `neptune-scale>=0.18.0`, and is built on top of `pytorch-lightning==2.5.1rc2`
 
-There are two ways this integration can be used before it is included in the official PyTorch Lightning release:
+To install the integration, use one of the following options:
 
 ### Option 1: Install from source (recommended)
 
@@ -33,7 +33,7 @@ pip install git+https://github.com/neptune-ai/pytorch-lightning.git
 In your `pytorch-lightning/src/lightning/pytorch/loggers` folder, replace the `__init__.py` and `neptune.py` files with the corresponding files available [here](https://github.com/SiddhantSadangi/pytorch-lightning/tree/master/src/lightning/pytorch/loggers)
 
 > [!NOTE]
-> The integration is built on top of `pytorch-lightning==2.5.1rc2`
+> Once the integration is included in the official PyTorch Lightning release, it's not necessary install it separately.
 
 ## Quickstart
 
@@ -50,7 +50,7 @@ trainer = Trainer(
     logger=neptune_logger,
 )
 
-# Your training will automatically log to Neptune Scale
+# Your training will automatically log to Neptune
 trainer.fit(model, datamodule, ...)
 ```
 
@@ -86,7 +86,7 @@ trainer = Trainer(
 With the Neptune integration, you can combine the default PyTorch Lightning logging methods with the Neptune methods and capabilities.
 
 #### Use Lightning's logging methods
-Use `self.log()` in your Lightning module as usual - everything will be automatically logged to Neptune Scale.
+Use `self.log()` in your Lightning module as usual – everything will be automatically logged to Neptune.
 
 #### Use Neptune's logging methods
 In addition to the default logging methods, you can use the Neptune [Run](https://docs.neptune.ai/run) methods to log more metadata types. You can also use the Neptune methods outside of the training loop.
