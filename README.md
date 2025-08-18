@@ -1,618 +1,186 @@
-<div align="center">
+# Neptune Logger for PyTorch Lightning
 
-<img alt="Lightning" src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/ptl_banner.png" width="800px" style="max-width: 100%;">
+[![PyTorch Lightning](https://img.shields.io/badge/PyTorch%20Lightning-2.5.1rc2-blue)](https://github.com/Lightning-AI/pytorch-lightning)
+[![Neptune Scale](https://img.shields.io/badge/Neptune%20Scale-%3E%3D0.18.0-orange)](https://github.com/neptune-ai/neptune-client-scale)
 
-<br/>
-<br/>
+This integration allows you to log your PyTorch Lightning training runs to Neptune 3.x, providing seamless experiment tracking.
 
-**The deep learning framework to pretrain, finetune and deploy AI models.**
+## Changelog
 
-**NEW- Deploying models? Check out [LitServe](https://github.com/Lightning-AI/litserve), the PyTorch Lightning for model serving**
+- **2025-08-11** - Updated to support `ddp-spawn` strategy
+- **2025-07-25** - Updated to better support nested mappings and dataclasses in `log_hyperparameters()`
+- **2025-06-27** - Initial release
 
-______________________________________________________________________
 
-<p align="center">
-    <a href="#quick-start" style="margin: 0 10px;">Quick start</a> •
-  <a href="#examples">Examples</a> •
-  <a href="#why-pytorch-lightning">PyTorch Lightning</a> •
-  <a href="#lightning-fabric-expert-control">Fabric</a> •
-  <a href="https://lightning.ai/">Lightning AI</a> •   
-  <a href="#community">Community</a> •
-  <a href="https://pytorch-lightning.readthedocs.io/en/stable/">Docs</a>
-</p>
 
-<!-- DO NOT ADD CONDA DOWNLOADS... README CHANGES MUST BE APPROVED BY EDEN OR WILL -->
+## Installation
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pytorch-lightning)](https://pypi.org/project/pytorch-lightning/)
-[![PyPI Status](https://badge.fury.io/py/pytorch-lightning.svg)](https://badge.fury.io/py/pytorch-lightning)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/pytorch-lightning)](https://pepy.tech/project/pytorch-lightning)
-[![Conda](https://img.shields.io/conda/v/conda-forge/lightning?label=conda&color=success)](https://anaconda.org/conda-forge/lightning)
-[![codecov](https://codecov.io/gh/Lightning-AI/pytorch-lightning/graph/badge.svg?token=SmzX8mnKlA)](https://codecov.io/gh/Lightning-AI/pytorch-lightning)
+> [!IMPORTANT]
+> This integration works only with `neptune-scale>=0.18.0`, and is built on top of `pytorch-lightning==2.5.1rc2`
 
-[![Discord](https://img.shields.io/discord/1077906959069626439?style=plastic)](https://discord.gg/VptPCZkGNa)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/w/lightning-ai/lightning)
-[![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Lightning-AI/lightning/blob/master/LICENSE)
+To install the integration, use one of the following options:
 
-<!--
-[![CodeFactor](https://www.codefactor.io/repository/github/Lightning-AI/lightning/badge)](https://www.codefactor.io/repository/github/Lightning-AI/lightning)
--->
+### Option 1: Install from source (recommended)
 
-</div>
-
-<div align="center">
-  
-<p align="center">
-
-&nbsp;
-  
-<a target="_blank" href="https://lightning.ai/docs/pytorch/latest/starter/introduction.html#define-a-lightningmodule">
-  <img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/get-started-badge.svg" height="36px" alt="Get started"/>
-</a>
-
-</p>
-
-</div>
-
-&nbsp;
-
-# Lightning has 2 core packages
-
-[PyTorch Lightning: Train and deploy PyTorch at scale](#why-pytorch-lightning).
-<br/>
-[Lightning Fabric: Expert control](#lightning-fabric-expert-control).
-
-Lightning gives you granular control over how much abstraction you want to add over PyTorch.
-
-<div align="center">
-    <img src="https://pl-public-data.s3.amazonaws.com/assets_lightning/continuum.png" width="80%">
-</div>
-
-&nbsp;
-
-# Quick start
-Install Lightning:
+Install the custom version of `pytorch-lightning` from the source:
 
 ```bash
-pip install lightning
+pip install git+https://github.com/neptune-ai/pytorch-lightning.git
 ```
 
-<!-- following section will be skipped from PyPI description -->
+### Option 2: Manual file replacement
 
-<details>
-  <summary>Advanced install options</summary>
-    <!-- following section will be skipped from PyPI description -->
+In your `pytorch-lightning/src/lightning/pytorch/loggers` folder, replace the `__init__.py` and `neptune.py` files with the corresponding files available [here](https://github.com/neptune-ai/pytorch-lightning/tree/master/src/lightning/pytorch/loggers)
 
-#### Install with optional dependencies
+> [!NOTE]
+> Once the integration is included in the official PyTorch Lightning release, it's not necessary install it separately.
 
-```bash
-pip install lightning['extra']
-```
-
-#### Conda
-
-```bash
-conda install lightning -c conda-forge
-```
-
-#### Install stable version
-
-Install future release from the source
-
-```bash
-pip install https://github.com/Lightning-AI/lightning/archive/refs/heads/release/stable.zip -U
-```
-
-#### Install bleeding-edge
-
-Install nightly from the source (no guarantees)
-
-```bash
-pip install https://github.com/Lightning-AI/lightning/archive/refs/heads/master.zip -U
-```
-
-or from testing PyPI
-
-```bash
-pip install -iU https://test.pypi.org/simple/ pytorch-lightning
-```
-
-</details>
-<!-- end skipping PyPI description -->
-
-### PyTorch Lightning example
-Define the training workflow. Here's a toy example ([explore real examples](https://lightning.ai/lightning-ai/studios?view=public&section=featured&query=pytorch+lightning)):
+## Quickstart
 
 ```python
-# main.py
-# ! pip install torchvision
-import torch, torch.nn as nn, torch.utils.data as data, torchvision as tv, torch.nn.functional as F
-import lightning as L
+from lightning.pytorch.loggers.neptune import NeptuneScaleLogger
+from lightning.pytorch import Trainer
 
-# --------------------------------
-# Step 1: Define a LightningModule
-# --------------------------------
-# A LightningModule (nn.Module subclass) defines a full *system*
-# (ie: an LLM, diffusion model, autoencoder, or simple image classifier).
+# Initialize the logger
+neptune_logger = NeptuneScaleLogger()
 
+# Use with your trainer
+trainer = Trainer(
+    ...,
+    logger=neptune_logger,
+)
 
-class LitAutoEncoder(L.LightningModule):
-    def __init__(self):
-        super().__init__()
-        self.encoder = nn.Sequential(nn.Linear(28 * 28, 128), nn.ReLU(), nn.Linear(128, 3))
-        self.decoder = nn.Sequential(nn.Linear(3, 128), nn.ReLU(), nn.Linear(128, 28 * 28))
-
-    def forward(self, x):
-        # in lightning, forward defines the prediction/inference actions
-        embedding = self.encoder(x)
-        return embedding
-
-    def training_step(self, batch, batch_idx):
-        # training_step defines the train loop. It is independent of forward
-        x, _ = batch
-        x = x.view(x.size(0), -1)
-        z = self.encoder(x)
-        x_hat = self.decoder(z)
-        loss = F.mse_loss(x_hat, x)
-        self.log("train_loss", loss)
-        return loss
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        return optimizer
-
-
-# -------------------
-# Step 2: Define data
-# -------------------
-dataset = tv.datasets.MNIST(".", download=True, transform=tv.transforms.ToTensor())
-train, val = data.random_split(dataset, [55000, 5000])
-
-# -------------------
-# Step 3: Train
-# -------------------
-autoencoder = LitAutoEncoder()
-trainer = L.Trainer()
-trainer.fit(autoencoder, data.DataLoader(train), data.DataLoader(val))
+# Your training will automatically log to Neptune
+trainer.fit(model, datamodule, ...)
 ```
 
-Run the model on your terminal
+## Usage
 
-```bash
-pip install torchvision
-python main.py
-```
-
-&nbsp;
-
-
-# Why PyTorch Lightning?
-
-PyTorch Lightning is just organized PyTorch - Lightning disentangles PyTorch code to decouple the science from the engineering.
-
-![PT to PL](docs/source-pytorch/_static/images/general/pl_quick_start_full_compressed.gif)
-
-&nbsp;
-
-----
-
-### Examples
-Explore various types of training possible with PyTorch Lightning. Pretrain and finetune ANY kind of model to perform ANY task like classification, segmentation, summarization and more:    
-
-| Task                                                                                                        | Description                                                    | Run |
-|-------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---|
-| [Hello world](#hello-simple-model)                                                                          | Pretrain - Hello world example                                 | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/pytorch-lightning-hello-world"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> |
-| [Image classification](https://lightning.ai/lightning-ai/studios/image-classification-with-pytorch-lightning) | Finetune - ResNet-34 model to classify images of cars          | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/image-classification-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> |   
-| [Image segmentation](https://lightning.ai/lightning-ai/studios/image-segmentation-with-pytorch-lightning)   | Finetune - ResNet-50 model to segment images                   | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/image-segmentation-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> |   
-| [Object detection](https://lightning.ai/lightning-ai/studios/object-detection-with-pytorch-lightning)       | Finetune - Faster R-CNN model to detect objects                   | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/object-detection-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> |
-| [Text classification](https://lightning.ai/lightning-ai/studios/text-classification-with-pytorch-lightning) | Finetune - text classifier (BERT model)                        | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/text-classification-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> |   
-| [Text summarization](https://lightning.ai/lightning-ai/studios/text-summarization-with-pytorch-lightning)   | Finetune - text summarization (Hugging Face transformer model) | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/text-summarization-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> |   
-| [Audio generation](https://lightning.ai/lightning-ai/studios/finetune-a-personal-ai-music-generator)        | Finetune - audio generator (transformer model)                 | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/finetune-a-personal-ai-music-generator"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> |   
-| [LLM finetuning](https://lightning.ai/lightning-ai/studios/finetune-an-llm-with-pytorch-lightning)          | Finetune - LLM (Meta Llama 3.1 8B)                | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/finetune-an-llm-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> | 
-| [Image generation](https://lightning.ai/lightning-ai/studios/train-a-diffusion-model-with-pytorch-lightning)          | Pretrain - Image generator (diffusion model)                | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/train-a-diffusion-model-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> | 
-| [Recommendation system](https://lightning.ai/lightning-ai/studios/recommendation-system-with-pytorch-lightning)  | Train - recommendation system (factorization and embedding)    | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/recommendation-system-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> | 
-| [Time-series forecasting](https://lightning.ai/lightning-ai/studios/time-series-forecasting-with-pytorch-lightning) | Train - Time-series forecasting with LSTM               | <a target="_blank" href="https://lightning.ai/lightning-ai/studios/time-series-forecasting-with-pytorch-lightning"><img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/app-2/studio-badge.svg" alt="Open In Studio"/></a> | 
-
-______________________________________________________________________
-
-## Advanced features
-
-Lightning has over [40+ advanced features](https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-flags) designed for professional AI research at scale.
-
-Here are some examples:
-
-<div align="center">
-    <img src="https://pl-bolts-doc-images.s3.us-east-2.amazonaws.com/features_2.jpg" max-height="600px">
-  </div>
-
-<details>
-  <summary>Train on 1000s of GPUs without code changes</summary>
+### 1. Import the logger
 
 ```python
-# 8 GPUs
-# no code changes needed
-trainer = Trainer(accelerator="gpu", devices=8)
-
-# 256 GPUs
-trainer = Trainer(accelerator="gpu", devices=8, num_nodes=32)
+from lightning.pytorch.loggers.neptune import NeptuneScaleLogger
 ```
 
-</details>
-
-<details>
-  <summary>Train on other accelerators like TPUs without code changes</summary>
+### 2. Initialize NeptuneScaleLogger
 
 ```python
-# no code changes needed
-trainer = Trainer(accelerator="tpu", devices=8)
+neptune_scale_logger = NeptuneScaleLogger()
 ```
 
-</details>
+> [!TIP]
+> - Check the class signature and docstring for initialization args.
+> - Check the `Run()` init params for additional `kwargs` that can be passed to `NeptuneScaleLogger()`: [Run | neptune.ai docs](https://docs.neptune.ai/run/#parameters)
 
-<details>
-  <summary>16-bit precision</summary>
+### 3. Pass to Trainer
 
 ```python
-# no code changes needed
-trainer = Trainer(precision=16)
+trainer = Trainer(
+    logger=neptune_scale_logger,
+    # ... other trainer arguments
+)
 ```
 
-</details>
+### 4. Log metadata to Neptune
 
-<details>
-  <summary>Experiment managers</summary>
+With the Neptune integration, you can combine the default PyTorch Lightning logging methods with the Neptune methods and capabilities.
+
+#### Use Lightning's logging methods
+Use `self.log()` in your Lightning module as usual – everything will be automatically logged to Neptune.
+
+#### Use Neptune's logging methods
+In addition to the default logging methods, you can use the Neptune [Run](https://docs.neptune.ai/run) methods to log more metadata types. You can also use the Neptune methods outside of the training loop.
+
+To access the Neptune run directly, use the `neptune_scale_logger.run` reference:
 
 ```python
-from lightning import loggers
-
-# tensorboard
-trainer = Trainer(logger=TensorBoardLogger("logs/"))
-
-# weights and biases
-trainer = Trainer(logger=loggers.WandbLogger())
-
-# comet
-trainer = Trainer(logger=loggers.CometLogger())
-
-# mlflow
-trainer = Trainer(logger=loggers.MLFlowLogger())
-
-# neptune
-trainer = Trainer(logger=loggers.NeptuneLogger())
-
-# neptune scale
-trainer = Trainer(logger=loggers.NeptuneScaleLogger())
-
-# ... and dozens more
+neptune_scale_logger.run.assign_files({"dataset/data_sample": "sample_data.csv"})
 ```
 
-</details>
+You can also use the `neptune_scale_logger.run` reference to log outside the prefix passed to `NeptuneScaleLogger`.
 
-<details>
-
-<summary>Early Stopping</summary>
+#### Add tags
+Use tags to identify and organize your runs. Add tags with the `neptune_scale_logger.run` reference:
 
 ```python
-es = EarlyStopping(monitor="val_loss")
-trainer = Trainer(callbacks=[es])
+neptune_scale_logger.run.add_tags(["notebook", "lightning"])
 ```
 
-</details>
-
-<details>
-  <summary>Checkpointing</summary>
+#### Log hyperparameters
+To log hyperparameters, use the standard `log_hyperparams()` method from the PyTorch Lightning logger:
 
 ```python
-checkpointing = ModelCheckpoint(monitor="val_loss")
-trainer = Trainer(callbacks=[checkpointing])
+PARAMS = {
+    "batch_size": 64,
+    "lr": 0.07,
+    ...
+}
+neptune_scale_logger.log_hyperparams(PARAMS)
 ```
 
-</details>
-
-<details>
-  <summary>Export to torchscript (JIT) (production use)</summary>
+Hyperparameters are logged under the `<prefix>/hyperparams` namespace. To log outside the prefix, or to use Neptune's automatic casting, use the Neptune's [`log_configs()`](https://docs.neptune.ai/run/log_configs) method on the Neptune run:
 
 ```python
-# torchscript
-autoencoder = LitAutoEncoder()
-torch.jit.save(autoencoder.to_torchscript(), "model.pt")
+neptune_scale_logger.run.log_configs(
+    data={
+        "data/batch_size": 64,
+        "model/optimizer/name": "adam",
+        "model/optimizer/lr": 0.07,
+        "model/optimizer/decay_factor": 0.97,
+        "model/tokenizer/name": "bert-base-uncased",
+    },
+)
 ```
 
-</details>
+#### Log model checkpoint paths
+If you have the `ModelCheckpoint` callback configured, you can log the paths to model checkpoints. Note that:
 
-<details>
-  <summary>Export to ONNX (production use)</summary>
+- All checkpoint paths are logged. The `save_last` and `save_top_k` parameters aren't supported.
+- Neptune Scale logger doesn't upload the checkpoints to Neptune.
+
+To disable logging of checkpoint paths, set the `log_model_checkpoints` init parameter to `False`:
 
 ```python
-# onnx
-with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as tmpfile:
-    autoencoder = LitAutoEncoder()
-    input_sample = torch.randn((1, 64))
-    autoencoder.to_onnx(tmpfile.name, input_sample, export_params=True)
-    os.path.isfile(tmpfile.name)
+neptune_scale_logger = NeptuneScaleLogger(log_model_checkpoints=False)
 ```
 
-</details>
-
-______________________________________________________________________
-
-## Advantages over unstructured PyTorch
-
-- Models become hardware agnostic
-- Code is clear to read because engineering code is abstracted away
-- Easier to reproduce
-- Make fewer mistakes because lightning handles the tricky engineering
-- Keeps all the flexibility (LightningModules are still PyTorch modules), but removes a ton of boilerplate
-- Lightning has dozens of integrations with popular machine learning tools.
-- [Tested rigorously with every new PR](https://github.com/Lightning-AI/lightning/tree/master/tests). We test every combination of PyTorch and Python supported versions, every OS, multi GPUs and even TPUs.
-- Minimal running speed overhead (about 300 ms per epoch compared with pure PyTorch).
-
-______________________________________________________________________
-
-<div align="center">
-    <a href="https://lightning.ai/docs/pytorch/stable/">Read the PyTorch Lightning docs</a>
-</div>
-
-______________________________________________________________________
-
-&nbsp;
-&nbsp;
-
-# Lightning Fabric: Expert control
-
-Run on any device at any scale with expert-level control over PyTorch training loop and scaling strategy. You can even write your own Trainer.
-
-Fabric is designed for the most complex models like foundation model scaling, LLMs, diffusion, transformers, reinforcement learning, active learning. Of any size.
-
-<table>
-<tr>
-<th>What to change</th>
-<th>Resulting Fabric Code (copy me!)</th>
-</tr>
-<tr>
-<td>
-<sub>
-
-```diff
-+ import lightning as L
-  import torch; import torchvision as tv
-
- dataset = tv.datasets.CIFAR10("data", download=True,
-                               train=True,
-                               transform=tv.transforms.ToTensor())
-
-+ fabric = L.Fabric()
-+ fabric.launch()
-
-  model = tv.models.resnet18()
-  optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
-- device = "cuda" if torch.cuda.is_available() else "cpu"
-- model.to(device)
-+ model, optimizer = fabric.setup(model, optimizer)
-
-  dataloader = torch.utils.data.DataLoader(dataset, batch_size=8)
-+ dataloader = fabric.setup_dataloaders(dataloader)
-
-  model.train()
-  num_epochs = 10
-  for epoch in range(num_epochs):
-      for batch in dataloader:
-          inputs, labels = batch
--         inputs, labels = inputs.to(device), labels.to(device)
-          optimizer.zero_grad()
-          outputs = model(inputs)
-          loss = torch.nn.functional.cross_entropy(outputs, labels)
--         loss.backward()
-+         fabric.backward(loss)
-          optimizer.step()
-          print(loss.data)
-```
-
-</sub>
-<td>
-<sub>
-
-```Python
-import lightning as L
-import torch; import torchvision as tv
-
-dataset = tv.datasets.CIFAR10("data", download=True,
-                              train=True,
-                              transform=tv.transforms.ToTensor())
-
-fabric = L.Fabric()
-fabric.launch()
-
-model = tv.models.resnet18()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
-model, optimizer = fabric.setup(model, optimizer)
-
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=8)
-dataloader = fabric.setup_dataloaders(dataloader)
-
-model.train()
-num_epochs = 10
-for epoch in range(num_epochs):
-    for batch in dataloader:
-        inputs, labels = batch
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = torch.nn.functional.cross_entropy(outputs, labels)
-        fabric.backward(loss)
-        optimizer.step()
-        print(loss.data)
-```
-
-</sub>
-</td>
-</tr>
-</table>
-
-## Key features
-
-<details>
-  <summary>Easily switch from running on CPU to GPU (Apple Silicon, CUDA, …), TPU, multi-GPU or even multi-node training</summary>
+#### Log model summary
+To log a text file with the model summary, use:
 
 ```python
-# Use your available hardware
-# no code changes needed
-fabric = Fabric()
-
-# Run on GPUs (CUDA or MPS)
-fabric = Fabric(accelerator="gpu")
-
-# 8 GPUs
-fabric = Fabric(accelerator="gpu", devices=8)
-
-# 256 GPUs, multi-node
-fabric = Fabric(accelerator="gpu", devices=8, num_nodes=32)
-
-# Run on TPUs
-fabric = Fabric(accelerator="tpu")
+model = LitModel()
+neptune_scale_logger.log_model_summary(model=model, max_depth=-1)
 ```
-
-</details>
-
-<details>
-  <summary>Use state-of-the-art distributed training strategies (DDP, FSDP, DeepSpeed) and mixed precision out of the box</summary>
-
-```python
-# Use state-of-the-art distributed training techniques
-fabric = Fabric(strategy="ddp")
-fabric = Fabric(strategy="deepspeed")
-fabric = Fabric(strategy="fsdp")
-
-# Switch the precision
-fabric = Fabric(precision="16-mixed")
-fabric = Fabric(precision="64")
-```
-
-</details>
-
-<details>
-  <summary>All the device logic boilerplate is handled for you</summary>
-
-```diff
-  # no more of this!
-- model.to(device)
-- batch.to(device)
-```
-
-</details>
-
-<details>
-  <summary>Build your own custom Trainer using Fabric primitives for training checkpointing, logging, and more</summary>
-
-```python
-import lightning as L
-
-
-class MyCustomTrainer:
-    def __init__(self, accelerator="auto", strategy="auto", devices="auto", precision="32-true"):
-        self.fabric = L.Fabric(accelerator=accelerator, strategy=strategy, devices=devices, precision=precision)
-
-    def fit(self, model, optimizer, dataloader, max_epochs):
-        self.fabric.launch()
-
-        model, optimizer = self.fabric.setup(model, optimizer)
-        dataloader = self.fabric.setup_dataloaders(dataloader)
-        model.train()
-
-        for epoch in range(max_epochs):
-            for batch in dataloader:
-                input, target = batch
-                optimizer.zero_grad()
-                output = model(input)
-                loss = loss_fn(output, target)
-                self.fabric.backward(loss)
-                optimizer.step()
-```
-
-You can find a more extensive example in our [examples](examples/fabric/build_your_own_trainer)
-
-</details>
-
-______________________________________________________________________
-
-<div align="center">
-    <a href="https://lightning.ai/docs/fabric/stable/">Read the Lightning Fabric docs</a>
-</div>
-
-______________________________________________________________________
-
-&nbsp;
-&nbsp;
 
 ## Examples
+- Refer to our example Colab notebook to see how this works in practice: [Neptune + PyTorch Lightning Notebook](https://colab.research.google.com/github/neptune-ai/scale-examples/blob/lb/pytorch-lightning/integrations-and-supported-tools/pytorch-lightning/notebooks/Neptune_PyTorch_Lightning.ipynb)
+- Play with an interactive example: [Neptune + PyTorch Lightning Example](https://scale.neptune.ai/o/examples/org/pytorch-lightning/runs/details?viewId=9ea6121c-42a7-4ece-83b2-c591044837e7&detailsTab=dashboard&dashboardId=9f3b0e0b-90ba-4706-a109-c8ffd8443e50&runIdentificationKey=lightning-experiment&type=experiment&experimentsOnly=true&runsLineage=FULL&lbViewUnpacked=true&sortBy=%5B%22sys%2Fcreation_time%22%5D&sortFieldType=%5B%22datetime%22%5D&sortFieldAggregationMode=%5B%22auto%22%5D&sortDirection=%5B%22descending%22%5D&experimentOnly=true)
 
-###### Self-supervised Learning
 
-- [CPC transforms](https://lightning-bolts.readthedocs.io/en/stable/transforms/self_supervised.html#cpc-transforms)
-- [Moco v2 transforms](https://lightning-bolts.readthedocs.io/en/stable/transforms/self_supervised.html#moco-v2-transforms)
-- [SimCLR transforms](https://lightning-bolts.readthedocs.io/en/stable/transforms/self_supervised.html#simclr-transforms)
+## Updating the integration
 
-###### Convolutional Architectures
+Updates to this integration are merged to the `master` branch of the fork rather than being released.
 
-- [GPT-2](https://lightning-bolts.readthedocs.io/en/stable/models/convolutional.html#gpt-2)
-- [UNet](https://lightning-bolts.readthedocs.io/en/stable/models/convolutional.html#unet)
+### 1. Enable notifications
 
-###### Reinforcement Learning
+Turn on notifications for all activity to be notified when changes have been merged:
 
-- [DQN Loss](https://lightning-bolts.readthedocs.io/en/stable/losses.html#dqn-loss)
-- [Double DQN Loss](https://lightning-bolts.readthedocs.io/en/stable/losses.html#double-dqn-loss)
-- [Per DQN Loss](https://lightning-bolts.readthedocs.io/en/stable/losses.html#per-dqn-loss)
+![GitHub Notifications](https://neptune.ai/wp-content/uploads/2025/08/GH_notifications.png)
 
-###### GANs
+### 2. Update installation
 
-- [Basic GAN](https://lightning-bolts.readthedocs.io/en/stable/models/gans.html#basic-gan)
-- [DCGAN](https://lightning-bolts.readthedocs.io/en/stable/models/gans.html#dcgan)
+Update your installation using `pip`:
 
-###### Classic ML
+```bash
+pip install git+https://github.com/neptune-ai/pytorch-lightning.git
+```
 
-- [Logistic Regression](https://lightning-bolts.readthedocs.io/en/stable/models/classic_ml.html#logistic-regression)
-- [Linear Regression](https://lightning-bolts.readthedocs.io/en/stable/models/classic_ml.html#linear-regression)
+## Support and feedback
 
-&nbsp;
-&nbsp;
+> [!NOTE]
+> This is an early version, and we would appreciate your feedback. Please don't hesitate to reach out if you have any questions, concerns, or suggestions for new features. 🤗
 
-## Continuous Integration
+### Getting help
 
-Lightning is rigorously tested across multiple CPUs, GPUs and TPUs and against major Python and PyTorch versions.
-
-###### \*Codecov is > 90%+ but build delays may show less
-
-<details>
-  <summary>Current build statuses</summary>
-
-<center>
-
-|       System / PyTorch ver.        | 1.13                                                                                                                                                                                                                            | 2.0                                                                                                                                                                                                                             |                                                                                                               2.1                                                                                                               |
-| :--------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-|        Linux py3.9 \[GPUs\]        |  |  | [![Build Status](https://dev.azure.com/Lightning-AI/lightning/_apis/build/status%2Fpytorch-lightning%20%28GPUs%29?branchName=master)](https://dev.azure.com/Lightning-AI/lightning/_build/latest?definitionId=24&branchName=master) |
-|  Linux (multiple Python versions)  | [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                                 | [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                                 |                 [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                 |
-|   OSX (multiple Python versions)   | [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                                 | [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                                 |                 [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                 |
-| Windows (multiple Python versions) | [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                                 | [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                                 |                 [![Test PyTorch](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml/badge.svg)](https://github.com/Lightning-AI/lightning/actions/workflows/ci-tests-pytorch.yml)                 |
-
-</center>
-</details>
-
-&nbsp;
-&nbsp;
-
-## Community
-
-The lightning community is maintained by
-
-- [10+ core contributors](https://lightning.ai/docs/pytorch/latest/community/governance.html) who are all a mix of professional engineers, Research Scientists, and Ph.D. students from top AI labs.
-- 800+ community contributors.
-
-Want to help us build Lightning and reduce boilerplate for thousands of researchers? [Learn how to make your first contribution here](https://lightning.ai/docs/pytorch/stable/generated/CONTRIBUTING.html)
-
-Lightning is also part of the [PyTorch ecosystem](https://pytorch.org/ecosystem/) which requires projects to have solid testing, documentation and support.
-
-### Asking for help
-
-If you have any questions please:
-
-1. [Read the docs](https://lightning.ai/docs).
-1. [Search through existing Discussions](https://github.com/Lightning-AI/lightning/discussions), or [add a new question](https://github.com/Lightning-AI/lightning/discussions/new)
-1. [Join our discord](https://discord.com/invite/tfXFetEZxv).
+- 📖 [Support Center](https://support.neptune.ai/)
+- 🐛 [Report Issues](https://github.com/neptune-ai/pytorch-lightning/issues)
