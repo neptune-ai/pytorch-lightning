@@ -30,7 +30,7 @@ pip install git+https://github.com/neptune-ai/pytorch-lightning.git
 
 ### Option 2: Manual file replacement
 
-In your `pytorch-lightning/src/lightning/pytorch/loggers` folder, replace the `__init__.py` and `neptune.py` files with the corresponding files available [here](https://github.com/SiddhantSadangi/pytorch-lightning/tree/master/src/lightning/pytorch/loggers)
+In your `pytorch-lightning/src/lightning/pytorch/loggers` folder, replace the `__init__.py` and `neptune.py` files with the corresponding files available [here](https://github.com/neptune-ai/pytorch-lightning/tree/master/src/lightning/pytorch/loggers)
 
 > [!NOTE]
 > Once the integration is included in the official PyTorch Lightning release, it's not necessary install it separately.
@@ -100,14 +100,14 @@ neptune_scale_logger.run.assign_files({"dataset/data_sample": "sample_data.csv"}
 You can also use the `neptune_scale_logger.run` reference to log outside the prefix passed to `NeptuneScaleLogger`.
 
 #### Add tags
-Use `tags` to identify and organize your runs. Add tags with the `neptune_scale_logger.run` reference:
+Use tags to identify and organize your runs. Add tags with the `neptune_scale_logger.run` reference:
 
 ```python
 neptune_scale_logger.run.add_tags(["notebook", "lightning"])
 ```
 
 #### Log hyperparameters
-To log hyperparameters, use the standard log_hyperparams() method from the PyTorch Lightning logger:
+To log hyperparameters, use the standard `log_hyperparams()` method from the PyTorch Lightning logger:
 
 ```python
 PARAMS = {
