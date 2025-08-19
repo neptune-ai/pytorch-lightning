@@ -2,6 +2,7 @@
 
 [![PyTorch Lightning](https://img.shields.io/badge/PyTorch%20Lightning-2.5.1rc2-blue)](https://github.com/Lightning-AI/pytorch-lightning)
 [![Neptune Scale](https://img.shields.io/badge/Neptune%20Scale-%3E%3D0.18.0-orange)](https://github.com/neptune-ai/neptune-client-scale)
+[![Explore in Neptune](https://neptune.ai/wp-content/uploads/2024/01/neptune-badge.svg)](https://scale.neptune.ai/o/examples/org/pytorch-lightning/runs/details?viewId=9ea6121c-42a7-4ece-83b2-c591044837e7&detailsTab=dashboard&dashboardId=9f3b0e0b-90ba-4706-a109-c8ffd8443e50&runIdentificationKey=lightning-experiment&type=experiment&experimentsOnly=true&runsLineage=FULL&lbViewUnpacked=true&sortBy=%5B%22sys%2Fcreation_time%22%5D&sortFieldType=%5B%22datetime%22%5D&sortFieldAggregationMode=%5B%22auto%22%5D&sortDirection=%5B%22descending%22%5D&experimentOnly=true)
 
 This integration allows you to log your PyTorch Lightning training runs to Neptune 3.x, providing seamless experiment tracking.
 
