@@ -366,8 +366,8 @@ intersphinx_mapping = {
     "lightning.fabric": ("https://lightning.ai/docs/fabric/stable/", None),
     # TODO: these are missing objects.inv
     # "comet_ml": ("https://www.comet.com/docs/v2/", None),
+    # "neptune (legacy)": ("https://docs-legacy.neptune.ai/", None),
     # "neptune": ("https://docs.neptune.ai/", None),
-    # "neptune scale": ("https://docs-beta.neptune.ai/", None),
     # "wandb": ("https://docs.wandb.ai//", None),
 }
 nitpicky = True

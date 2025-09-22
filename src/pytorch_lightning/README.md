@@ -157,7 +157,7 @@ import pytorch_lightning as pl
 
 ### Step 2: Define a LightningModule (nn.Module subclass)
 
-A LightningModule defines a full *system* (ie: a GAN, autoencoder, BERT or a simple Image Classifier).
+A LightningModule defines a full _system_ (ie: a GAN, autoencoder, BERT or a simple Image Classifier).
 
 ```python
 class LitAutoEncoder(pl.LightningModule):
@@ -253,10 +253,10 @@ trainer = Trainer(logger=loggers.CometLogger())
 trainer = Trainer(logger=loggers.MLFlowLogger())
 
 # neptune 2.x
-trainer = Trainer(logger=loggers.NeptuneLogger())
+trainer = Trainer(logger=loggers.NeptuneLegacyLogger())
 
 # neptune 3.x
-trainer = Trainer(logger=loggers.NeptuneScaleLogger())
+trainer = Trainer(logger=loggers.NeptuneLogger())
 
 # ... and dozens more
 ```

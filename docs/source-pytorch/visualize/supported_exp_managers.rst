@@ -80,28 +80,28 @@ Configure the logger and pass it to the :class:`~lightning.pytorch.trainer.train
     :skipif: not _NEPTUNE_AVAILABLE
 
     import neptune
-    from lightning.pytorch.loggers import NeptuneLogger
+    from lightning.pytorch.loggers import NeptuneLegacyLogger
 
-    neptune_logger = NeptuneLogger(
+    neptune_legacy_logger = NeptuneLegacyLogger(
         api_key=neptune.ANONYMOUS_API_TOKEN,  # replace with your own
         project="common/pytorch-lightning-integration",  # format "<WORKSPACE/PROJECT>"
     )
-    trainer = Trainer(logger=neptune_logger)
+    trainer = Trainer(logger=neptune_legacy_logger)
 
-Access the neptune logger from any function (except the LightningModule *init*) to use its API for tracking advanced artifacts
+Access neptune_legacy_logger from any function (except the LightningModule *init*) to use its API for tracking advanced artifacts
 
 .. code-block:: python
 
     class LitModel(LightningModule):
         def any_lightning_module_function_or_hook(self):
-            neptune_logger = self.logger.experiment["your/metadata/structure"]
-            neptune_logger.append(metadata)
+            neptune_legacy_logger = self.logger.experiment["your/metadata/structure"]
+            neptune_legacy_logger.append(metadata)
 
-Here's the full documentation for the :class:`~lightning.pytorch.loggers.NeptuneLogger`.
+Here's the full documentation for the :class:`~lightning.pytorch.loggers.NeptuneLegacyLogger`.
 
 ----
 
-Neptune 3.x (Neptune Scale)
+Neptune 3.x
 ==========
 To use `Neptune 3.x <https://docs.neptune.ai/>`_ first install the neptune-scale package:
 
@@ -116,25 +116,25 @@ Configure the logger and pass it to the :class:`~lightning.pytorch.trainer.train
     :skipif: not _NEPTUNE_SCALE_AVAILABLE
 
     from neptune_scale import Run
-    from lightning.pytorch.loggers import NeptuneScaleLogger
+    from lightning.pytorch.loggers import NeptuneLogger
 
-    neptune_scale_logger = NeptuneScaleLogger(
+    neptune_logger = NeptuneLogger(
         api_key="<YOUR_NEPTUNE_SCALE_API_KEY>",  # replace with your own
         project="<YOUR_NEPTUNE_SCALE_WORKSPACE>/<YOUR_NEPTUNE_SCALE_PROJECT>",  # replace with your own
     )
-    trainer = Trainer(logger=neptune_scale_logger)
+    trainer = Trainer(logger=neptune_logger)
 
-Access the Neptune Scale logger from any function (except the LightningModule *init*) to use its API for tracking advanced artifacts
+Access neptune_logger from any function (except the LightningModule *init*) to use its API for tracking advanced artifacts
 
 .. code-block:: python
 
     class LitModel(LightningModule):
         def any_lightning_module_function_or_hook(self):
-            neptune_scale_logger = self.logger.experiment
-            neptune_scale_logger.log_metrics(data={"path/to/metadata": metadata}, step=step)
-            neptune_scale_logger.log_configs(data={"path/to/config": config})
+            neptune_logger = self.logger.experiment
+            neptune_logger.log_metrics(data={"path/to/metadata": metadata}, step=step)
+            neptune_logger.log_configs(data={"path/to/config": config})
 
-Here's the full documentation for the :class:`~lightning.pytorch.loggers.NeptuneScaleLogger`.
+Here's the full documentation for the :class:`~lightning.pytorch.loggers.NeptuneLogger`.
 
 ----
 

@@ -1,18 +1,17 @@
 # Neptune Logger for PyTorch Lightning
 
-[![PyTorch Lightning](https://img.shields.io/badge/PyTorch%20Lightning-2.5.1rc2-blue)](https://github.com/Lightning-AI/pytorch-lightning)
-[![Neptune Scale](https://img.shields.io/badge/Neptune%20Scale-%3E%3D0.18.0-orange)](https://github.com/neptune-ai/neptune-client-scale)
+[![PyTorch Lightning](https://img.shields.io/badge/lightning-2.5.1rc2-blue)](https://github.com/Lightning-AI/pytorch-lightning)
+[![Neptune](https://img.shields.io/badge/neptune--scale-%3E%3D0.18.0-orange)](https://github.com/neptune-ai/neptune-client-scale)
 [![Explore in Neptune](https://neptune.ai/wp-content/uploads/2024/01/neptune-badge.svg)](https://scale.neptune.ai/o/examples/org/pytorch-lightning/runs/details?viewId=9ea6121c-42a7-4ece-83b2-c591044837e7&detailsTab=dashboard&dashboardId=9f3b0e0b-90ba-4706-a109-c8ffd8443e50&runIdentificationKey=lightning-experiment&type=experiment&experimentsOnly=true&runsLineage=FULL&lbViewUnpacked=true&sortBy=%5B%22sys%2Fcreation_time%22%5D&sortFieldType=%5B%22datetime%22%5D&sortFieldAggregationMode=%5B%22auto%22%5D&sortDirection=%5B%22descending%22%5D&experimentOnly=true)
 
 This integration allows you to log your PyTorch Lightning training runs to Neptune 3.x, providing seamless experiment tracking.
 
 ## Changelog
 
+- **2025-09-22** - Renamed `NeptuneScaleLogger` to `NeptuneLogger` and existing `NeptuneLogger` to `NeptuneLegacyLogger`
 - **2025-08-11** - Updated to support `ddp-spawn` strategy
 - **2025-07-25** - Updated to better support nested mappings and dataclasses in `log_hyperparameters()`
 - **2025-06-27** - Initial release
-
-
 
 ## Installation
 
@@ -39,11 +38,11 @@ In your `pytorch-lightning/src/lightning/pytorch/loggers` folder, replace the `_
 ## Quickstart
 
 ```python
-from lightning.pytorch.loggers.neptune import NeptuneScaleLogger
+from lightning.pytorch.loggers.neptune import NeptuneLogger
 from lightning.pytorch import Trainer
 
 # Initialize the logger
-neptune_logger = NeptuneScaleLogger()
+neptune_logger = NeptuneLogger()
 
 # Use with your trainer
 trainer = Trainer(
@@ -60,24 +59,25 @@ trainer.fit(model, datamodule, ...)
 ### 1. Import the logger
 
 ```python
-from lightning.pytorch.loggers.neptune import NeptuneScaleLogger
+from lightning.pytorch.loggers.neptune import NeptuneLogger
 ```
 
-### 2. Initialize NeptuneScaleLogger
+### 2. Initialize NeptuneLogger
 
 ```python
-neptune_scale_logger = NeptuneScaleLogger()
+neptune_logger = NeptuneLogger()
 ```
 
 > [!TIP]
+>
 > - Check the class signature and docstring for initialization args.
-> - Check the `Run()` init params for additional `kwargs` that can be passed to `NeptuneScaleLogger()`: [Run | neptune.ai docs](https://docs.neptune.ai/run/#parameters)
+> - Check the `Run()` init params for additional `kwargs` that can be passed to `NeptuneLogger()`: [Run | neptune.ai docs](https://docs.neptune.ai/run/#parameters)
 
 ### 3. Pass to Trainer
 
 ```python
 trainer = Trainer(
-    logger=neptune_scale_logger,
+    logger=neptune_logger,
     # ... other trainer arguments
 )
 ```
@@ -87,27 +87,31 @@ trainer = Trainer(
 With the Neptune integration, you can combine the default PyTorch Lightning logging methods with the Neptune methods and capabilities.
 
 #### Use Lightning's logging methods
+
 Use `self.log()` in your Lightning module as usual – everything will be automatically logged to Neptune.
 
 #### Use Neptune's logging methods
+
 In addition to the default logging methods, you can use the Neptune [Run](https://docs.neptune.ai/run) methods to log more metadata types. You can also use the Neptune methods outside of the training loop.
 
-To access the Neptune run directly, use the `neptune_scale_logger.run` reference:
+To access the Neptune run directly, use the `neptune_logger.run` reference:
 
 ```python
-neptune_scale_logger.run.assign_files({"dataset/data_sample": "sample_data.csv"})
+neptune_logger.run.assign_files({"dataset/data_sample": "sample_data.csv"})
 ```
 
-You can also use the `neptune_scale_logger.run` reference to log outside the prefix passed to `NeptuneScaleLogger`.
+You can also use the `neptune_logger.run` reference to log outside the prefix passed to `NeptuneLogger`.
 
 #### Add tags
-Use tags to identify and organize your runs. Add tags with the `neptune_scale_logger.run` reference:
+
+Use tags to identify and organize your runs. Add tags with the `neptune_logger.run` reference:
 
 ```python
-neptune_scale_logger.run.add_tags(["notebook", "lightning"])
+neptune_logger.run.add_tags(["notebook", "lightning"])
 ```
 
 #### Log hyperparameters
+
 To log hyperparameters, use the standard `log_hyperparams()` method from the PyTorch Lightning logger:
 
 ```python
@@ -116,13 +120,13 @@ PARAMS = {
     "lr": 0.07,
     ...
 }
-neptune_scale_logger.log_hyperparams(PARAMS)
+neptune_logger.log_hyperparams(PARAMS)
 ```
 
 Hyperparameters are logged under the `<prefix>/hyperparams` namespace. To log outside the prefix, or to use Neptune's automatic casting, use the Neptune's [`log_configs()`](https://docs.neptune.ai/run/log_configs) method on the Neptune run:
 
 ```python
-neptune_scale_logger.run.log_configs(
+neptune_logger.run.log_configs(
     data={
         "data/batch_size": 64,
         "model/optimizer/name": "adam",
@@ -134,6 +138,7 @@ neptune_scale_logger.run.log_configs(
 ```
 
 #### Log model checkpoint paths
+
 If you have the `ModelCheckpoint` callback configured, you can log the paths to model checkpoints. Note that:
 
 - All checkpoint paths are logged. The `save_last` and `save_top_k` parameters aren't supported.
@@ -142,21 +147,22 @@ If you have the `ModelCheckpoint` callback configured, you can log the paths to 
 To disable logging of checkpoint paths, set the `log_model_checkpoints` init parameter to `False`:
 
 ```python
-neptune_scale_logger = NeptuneScaleLogger(log_model_checkpoints=False)
+neptune_logger = NeptuneLogger(log_model_checkpoints=False)
 ```
 
 #### Log model summary
+
 To log a text file with the model summary, use:
 
 ```python
 model = LitModel()
-neptune_scale_logger.log_model_summary(model=model, max_depth=-1)
+neptune_logger.log_model_summary(model=model, max_depth=-1)
 ```
 
 ## Examples
+
 - Refer to our example Colab notebook to see how this works in practice: [Neptune + PyTorch Lightning Notebook](https://colab.research.google.com/github/neptune-ai/scale-examples/blob/lb/pytorch-lightning/integrations-and-supported-tools/pytorch-lightning/notebooks/Neptune_PyTorch_Lightning.ipynb)
 - Play with an interactive example: [Neptune + PyTorch Lightning Example](https://scale.neptune.ai/o/examples/org/pytorch-lightning/runs/details?viewId=9ea6121c-42a7-4ece-83b2-c591044837e7&detailsTab=dashboard&dashboardId=9f3b0e0b-90ba-4706-a109-c8ffd8443e50&runIdentificationKey=lightning-experiment&type=experiment&experimentsOnly=true&runsLineage=FULL&lbViewUnpacked=true&sortBy=%5B%22sys%2Fcreation_time%22%5D&sortFieldType=%5B%22datetime%22%5D&sortFieldAggregationMode=%5B%22auto%22%5D&sortDirection=%5B%22descending%22%5D&experimentOnly=true)
-
 
 ## Updating the integration
 

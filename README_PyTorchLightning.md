@@ -278,11 +278,11 @@ trainer = Trainer(logger=loggers.CometLogger())
 # mlflow
 trainer = Trainer(logger=loggers.MLFlowLogger())
 
+# neptune (legacy)
+trainer = Trainer(logger=loggers.NeptuneLegacyLogger())
+
 # neptune
 trainer = Trainer(logger=loggers.NeptuneLogger())
-
-# neptune scale
-trainer = Trainer(logger=loggers.NeptuneScaleLogger())
 
 # ... and dozens more
 ```

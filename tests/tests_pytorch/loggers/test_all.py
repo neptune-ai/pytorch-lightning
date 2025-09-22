@@ -26,7 +26,7 @@ from lightning.pytorch.loggers import (
     CometLogger,
     CSVLogger,
     MLFlowLogger,
-    NeptuneLogger,
+    NeptuneLegacyLogger,
     TensorBoardLogger,
     WandbLogger,
 )
@@ -41,11 +41,11 @@ ALL_LOGGER_CLASSES = (
     CometLogger,
     CSVLogger,
     MLFlowLogger,
-    NeptuneLogger,
+    NeptuneLegacyLogger,
     TensorBoardLogger,
     WandbLogger,
 )
-ALL_LOGGER_CLASSES_WO_NEPTUNE = tuple(filter(lambda cls: cls is not NeptuneLogger, ALL_LOGGER_CLASSES))
+ALL_LOGGER_CLASSES_WO_NEPTUNE = tuple(filter(lambda cls: cls is not NeptuneLegacyLogger, ALL_LOGGER_CLASSES))
 
 
 def _get_logger_args(logger_class, save_dir):
@@ -56,7 +56,7 @@ def _get_logger_args(logger_class, save_dir):
         logger_args.update(offline_mode=True)
     if "offline" in inspect.getfullargspec(logger_class).args:
         logger_args.update(offline=True)
-    if issubclass(logger_class, NeptuneLogger):
+    if issubclass(logger_class, NeptuneLegacyLogger):
         logger_args.update(mode="offline")
     if issubclass(logger_class, CometLogger):
         logger_args.update(online=False)
@@ -111,7 +111,7 @@ def test_loggers_fit_test_all(logger_class, mlflow_mock, wandb_mock, comet_mock,
         logger._project_name = "bar"
         logger.experiment.get_key.return_value = "SOME_KEY"
 
-    if logger_class == NeptuneLogger:
+    if logger_class == NeptuneLegacyLogger:
         logger._retrieve_run_data = Mock()
         logger._run_short_id = "foo"
         logger._run_name = "bar"
@@ -151,7 +151,7 @@ def test_loggers_fit_test_all(logger_class, mlflow_mock, wandb_mock, comet_mock,
 @mock.patch.dict(os.environ, {})
 @pytest.mark.parametrize(
     "logger_class", ALL_LOGGER_CLASSES_WO_NEPTUNE
-)  # WandbLogger and NeptuneLogger get tested separately
+)  # WandbLogger and NeptuneLegacyLogger get tested separately
 def test_loggers_pickle_all(tmp_path, monkeypatch, logger_class):
     """Test that the logger objects can be pickled.
 
@@ -222,7 +222,7 @@ class LazyInitExperimentCheck(Callback):
             return
         if isinstance(trainer.logger, MLFlowLogger):
             assert trainer.logger._mlflow_client
-        elif isinstance(trainer.logger, NeptuneLogger):
+        elif isinstance(trainer.logger, NeptuneLegacyLogger):
             assert trainer.logger._run_instance
         elif hasattr(trainer.logger, "_experiment"):
             assert trainer.logger._experiment
@@ -309,7 +309,13 @@ def test_logger_with_prefix_all(mlflow_mock, wandb_mock, comet_mock, neptune_moc
     )
 
     # Neptune
-    logger = _instantiate_logger(NeptuneLogger, api_key="test", project="project", save_dir=tmp_path, prefix=prefix)
+    logger = _instantiate_logger(
+        NeptuneLegacyLogger,
+        api_key="test",
+        project="project",
+        save_dir=tmp_path,
+        prefix=prefix,
+    )
     assert logger.experiment.__getitem__.call_count == 0
     logger.log_metrics({"test": 1.0}, step=0)
     assert logger.experiment.__getitem__.call_count == 1
