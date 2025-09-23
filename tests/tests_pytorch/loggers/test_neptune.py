@@ -23,7 +23,7 @@ import torch
 import lightning.pytorch as pl
 from lightning.pytorch import Trainer
 from lightning.pytorch.demos.boring_classes import BoringModel
-from lightning.pytorch.loggers import NeptuneLogger, NeptuneScaleLogger
+from lightning.pytorch.loggers import NeptuneLegacyLogger, NeptuneLogger
 from lightning.pytorch.loggers.neptune import _NEPTUNE_AVAILABLE, _NEPTUNE_SCALE_AVAILABLE
 
 
@@ -44,7 +44,7 @@ def _fit_and_test(logger, model, tmp_path):
 
 
 def _get_logger_with_mocks(**kwargs):
-    logger = NeptuneLogger(**kwargs)
+    logger = NeptuneLegacyLogger(**kwargs)
     run_instance_mock = MagicMock()
     logger._run_instance = run_instance_mock
     logger._run_instance.__getitem__.return_value.fetch.return_value = "exp-name"
@@ -59,7 +59,7 @@ def test_neptune_online(neptune_mock):
     neptune_mock.init_run.return_value.exists.return_value = True
     neptune_mock.init_run.return_value.__getitem__.side_effect = _fetchable_paths
 
-    logger = NeptuneLogger(api_key="test", project="project")
+    logger = NeptuneLegacyLogger(api_key="test", project="project")
     created_run_mock = logger.run
 
     assert logger._run_instance == created_run_mock
@@ -77,7 +77,7 @@ def test_neptune_online(neptune_mock):
 def test_neptune_offline(neptune_mock):
     neptune_mock.init_run.return_value.exists.return_value = False
 
-    logger = NeptuneLogger(mode="offline")
+    logger = NeptuneLegacyLogger(mode="offline")
     created_run_mock = logger.run
     logger.experiment["foo"] = "bar"
 
@@ -94,7 +94,7 @@ def test_online_with_custom_run(neptune_mock):
     created_run = neptune_mock.init_run()
     neptune_mock.init_run.reset_mock()
 
-    logger = NeptuneLogger(run=created_run)
+    logger = NeptuneLegacyLogger(run=created_run)
     assert logger._run_instance == created_run
     assert logger._run_instance == created_run
     assert logger.version == "TEST-1"
@@ -111,7 +111,7 @@ def test_neptune_pickling(neptune_mock):
         pickle.dumps(unpickleable_run)
     neptune_mock.init_run.reset_mock()
 
-    logger = NeptuneLogger(run=unpickleable_run)
+    logger = NeptuneLegacyLogger(run=unpickleable_run)
     assert neptune_mock.init_run.call_count == 0
 
     pickled_logger = pickle.dumps(logger)
@@ -128,24 +128,24 @@ def test_online_with_wrong_kwargs(neptune_mock):
     run = neptune_mock.init_run()
 
     with pytest.raises(ValueError):
-        NeptuneLogger(run="some string")
+        NeptuneLegacyLogger(run="some string")
 
     with pytest.raises(ValueError):
-        NeptuneLogger(run=run, project="redundant project")
+        NeptuneLegacyLogger(run=run, project="redundant project")
 
     with pytest.raises(ValueError):
-        NeptuneLogger(run=run, api_key="redundant api key")
+        NeptuneLegacyLogger(run=run, api_key="redundant api key")
 
     with pytest.raises(ValueError):
-        NeptuneLogger(run=run, name="redundant api name")
+        NeptuneLegacyLogger(run=run, name="redundant api name")
 
     with pytest.raises(ValueError):
-        NeptuneLogger(run=run, foo="random **kwarg")
+        NeptuneLegacyLogger(run=run, foo="random **kwarg")
 
     # this should work
-    NeptuneLogger(run=run)
-    NeptuneLogger(project="foo")
-    NeptuneLogger(foo="bar")
+    NeptuneLegacyLogger(run=run)
+    NeptuneLegacyLogger(project="foo")
+    NeptuneLegacyLogger(foo="bar")
 
 
 @pytest.mark.skipif(not _NEPTUNE_AVAILABLE, reason="Neptune is required for this test.")
@@ -287,7 +287,7 @@ def test_after_save_checkpoint(neptune_mock):
 
 @pytest.mark.skipif(not _NEPTUNE_AVAILABLE, reason="Neptune is required for this test.")
 def test_save_dir(neptune_mock):
-    logger = NeptuneLogger(api_key="test", project="project")
+    logger = NeptuneLegacyLogger(api_key="test", project="project")
     assert logger.save_dir == os.path.join(os.getcwd(), ".neptune")
 
 
@@ -318,7 +318,7 @@ def test_get_full_model_name():
     ]
 
     for expected_model_name, model_path, checkpoint in test_input_data:
-        assert NeptuneLogger._get_full_model_name(model_path, checkpoint) == expected_model_name
+        assert NeptuneLegacyLogger._get_full_model_name(model_path, checkpoint) == expected_model_name
 
 
 @pytest.mark.skipif(not _NEPTUNE_AVAILABLE, reason="Neptune is required for this test.")
@@ -339,7 +339,7 @@ def test_get_full_model_names_from_exp_structure():
         "other_non_important": {"val42": 42},
     }
     expected_keys = {"lvl1_1/lvl2/lvl3_1", "lvl1_1/lvl2/lvl3_2", "lvl1_2"}
-    assert NeptuneLogger._get_full_model_names_from_exp_structure(input_dict, "foo/bar") == expected_keys
+    assert NeptuneLegacyLogger._get_full_model_names_from_exp_structure(input_dict, "foo/bar") == expected_keys
 
 
 @pytest.mark.skipif(not _NEPTUNE_AVAILABLE, reason="Neptune is required for this test.")
@@ -354,16 +354,16 @@ def test_inactive_run(neptune_mock, tmp_path, monkeypatch):
     _fit_and_test(logger=logger, model=BoringModel(), tmp_path=tmp_path)
 
 
-# Fixtures for NeptuneScaleLogger tests
+# Fixtures for NeptuneLogger tests
 @pytest.fixture
-def neptune_scale_logger(monkeypatch):
-    """Fixture that provides a NeptuneScaleLogger instance and handles cleanup."""
+def neptune_logger(monkeypatch):
+    """Fixture that provides a NeptuneLogger instance and handles cleanup."""
     from neptune_scale import Run
 
     mock_run = MagicMock(spec=Run)
     monkeypatch.setattr("neptune_scale.Run", MagicMock(return_value=mock_run))
 
-    logger = NeptuneScaleLogger()
+    logger = NeptuneLogger()
     yield logger, mock_run
     logger.finalize("success")
 
@@ -379,20 +379,20 @@ def neptune_scale_run():
     return mock_run
 
 
-# NeptuneScaleLogger tests
+# NeptuneLogger tests
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_init_with_api_token(neptune_scale_logger):
+def test_neptune_logger_init_with_api_token(neptune_logger):
     """Test that the logger can be initialized with an API token."""
-    logger, _ = neptune_scale_logger
+    logger, _ = neptune_logger
 
     assert logger._api_token is None  # default value
     assert logger._project is None  # default value
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_init_with_run(neptune_scale_run):
+def test_neptune_logger_init_with_run(neptune_scale_run):
     """Test that the logger can be initialized with an existing run."""
-    logger = NeptuneScaleLogger(run=neptune_scale_run)
+    logger = NeptuneLogger(run=neptune_scale_run)
     try:
         assert logger.experiment == neptune_scale_run
         assert logger.version == "existing-run-id"
@@ -402,9 +402,9 @@ def test_neptune_scale_logger_init_with_run(neptune_scale_run):
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_log_metrics(neptune_scale_logger):
+def test_neptune_logger_log_metrics(neptune_logger):
     """Test logging metrics."""
-    logger, mock_run = neptune_scale_logger
+    logger, mock_run = neptune_logger
 
     metrics = {"loss": 1.23, "accuracy": 0.89}
     logger.log_metrics(metrics, step=5)
@@ -417,9 +417,9 @@ def test_neptune_scale_logger_log_metrics(neptune_scale_logger):
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_log_hyperparams(neptune_scale_logger):
+def test_neptune_logger_log_hyperparams(neptune_logger):
     """Test logging hyperparameters."""
-    logger, mock_run = neptune_scale_logger
+    logger, mock_run = neptune_logger
 
     params = {"batch_size": 32, "learning_rate": 0.001}
     logger.log_hyperparams(params)
@@ -432,14 +432,14 @@ def test_neptune_scale_logger_log_hyperparams(neptune_scale_logger):
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_save_dir(neptune_scale_logger):
+def test_neptune_logger_save_dir(neptune_logger):
     """Test that save_dir returns the correct directory."""
-    logger, _ = neptune_scale_logger
+    logger, _ = neptune_logger
     assert logger.save_dir.endswith(".neptune")
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_with_tags(monkeypatch):
+def test_neptune_logger_with_tags(monkeypatch):
     """Test initialization with tags and group tags."""
     from neptune_scale import Run
 
@@ -448,7 +448,7 @@ def test_neptune_scale_logger_with_tags(monkeypatch):
 
     tags = ["test-tag-1", "test-tag-2"]
     group_tags = ["group-1", "group-2"]
-    logger = NeptuneScaleLogger(tags=tags, group_tags=group_tags)
+    logger = NeptuneLogger(tags=tags, group_tags=group_tags)
     try:
         assert logger._tags == tags
         assert logger._group_tags == group_tags
@@ -457,27 +457,27 @@ def test_neptune_scale_logger_with_tags(monkeypatch):
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_finalize(neptune_scale_logger):
+def test_neptune_logger_finalize(neptune_logger):
     """Test finalize method sets status correctly."""
-    logger, mock_run = neptune_scale_logger
+    logger, mock_run = neptune_logger
     logger.finalize("success")
     expected_key = logger._construct_path_with_prefix("status")
     mock_run.log_configs.assert_any_call({expected_key: "success"})
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_invalid_run():
+def test_neptune_logger_invalid_run():
     """Test that initialization with invalid run object raises ValueError."""
     with pytest.raises(ValueError, match="Run parameter expected to be of type"):
-        NeptuneScaleLogger(run="invalid-run")
+        NeptuneLogger(run="invalid-run")
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_log_model_summary(neptune_scale_logger, monkeypatch):
+def test_neptune_logger_log_model_summary(neptune_logger, monkeypatch):
     from neptune_scale.types import File
 
     model = BoringModel()
-    logger, mock_run = neptune_scale_logger
+    logger, mock_run = neptune_logger
     # Patch assign_files to track calls
     assign_files_mock = mock.MagicMock()
     monkeypatch.setattr(mock_run, "assign_files", assign_files_mock)
@@ -490,25 +490,25 @@ def test_neptune_scale_logger_log_model_summary(neptune_scale_logger, monkeypatc
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_experiment_getter(neptune_scale_logger):
+def test_neptune_logger_experiment_getter(neptune_logger):
     """Test that experiment property returns the run instance."""
-    logger, mock_run = neptune_scale_logger
+    logger, mock_run = neptune_logger
     assert logger.experiment == mock_run
     assert logger.run == mock_run
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_with_prefix(neptune_scale_logger):
+def test_neptune_logger_with_prefix(neptune_logger):
     """Test that logger uses custom prefix correctly."""
-    logger, mock_run = neptune_scale_logger
+    logger, mock_run = neptune_logger
     metrics = {"loss": 1.23}
     logger.log_metrics(metrics, step=5)
     mock_run.log_metrics.assert_called_once_with({"training/loss": 1.23}, step=5)
 
 
 @pytest.mark.skipif(not _NEPTUNE_SCALE_AVAILABLE, reason="Neptune-Scale is required for this test.")
-def test_neptune_scale_logger_after_save_checkpoint(neptune_scale_logger):
-    logger, mock_run = neptune_scale_logger
+def test_neptune_logger_after_save_checkpoint(neptune_logger):
+    logger, mock_run = neptune_logger
     models_root_dir = os.path.join("path", "to", "models")
     cb_mock = MagicMock(
         dirpath=models_root_dir,

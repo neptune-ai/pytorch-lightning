@@ -68,7 +68,7 @@ def _catch_inactive(func: Callable) -> Callable:
     return wrapper
 
 
-class NeptuneLogger(Logger):
+class NeptuneLegacyLogger(Logger):
     r"""Log using `Neptune <https://docs-legacy.neptune.ai/integrations/lightning/>`_.
 
     Install it with pip:
@@ -85,23 +85,23 @@ class NeptuneLogger(Logger):
 
     **Quickstart**
 
-    Pass a NeptuneLogger instance to the Trainer to log metadata with Neptune:
+    Pass a NeptuneLegacyLogger instance to the Trainer to log metadata with Neptune:
 
     .. code-block:: python
 
 
         from lightning.pytorch import Trainer
-        from lightning.pytorch.loggers import NeptuneLogger
+        from lightning.pytorch.loggers import NeptuneLegacyLogger
         import neptune
 
-        neptune_logger = NeptuneLogger(
+        neptune_legacy_logger = NeptuneLegacyLogger(
             api_key=neptune.ANONYMOUS_API_TOKEN,  # replace with your own
             project="common/pytorch-lightning-integration",  # format "workspace-name/project-name"
             tags=["training", "resnet"],  # optional
         )
-        trainer = Trainer(max_epochs=10, logger=neptune_logger)
+        trainer = Trainer(max_epochs=10, logger=neptune_legacy_logger)
 
-    **How to use NeptuneLogger?**
+    **How to use NeptuneLegacyLogger?**
 
     Use the logger anywhere in your :class:`~lightning.pytorch.core.LightningModule` as follows:
 
@@ -131,7 +131,7 @@ class NeptuneLogger(Logger):
     scores, files, images, interactive visuals, and CSVs.
     Refer to the `Neptune docs <https://docs-legacy.neptune.ai/logging/methods>`_
     for details.
-    You can also use the regular logger methods ``log_metrics()``, and ``log_hyperparams()`` with NeptuneLogger.
+    You can also use the regular logger methods ``log_metrics()``, and ``log_hyperparams()`` with NeptuneLegacyLogger.
 
     **Log after fitting or testing is finished**
 
@@ -139,9 +139,9 @@ class NeptuneLogger(Logger):
 
     .. code-block:: python
 
-        neptune_logger = NeptuneLogger(project="common/pytorch-lightning-integration")
+        neptune_legacy_logger = NeptuneLegacyLogger(project="common/pytorch-lightning-integration")
 
-        trainer = pl.Trainer(logger=neptune_logger)
+        trainer = pl.Trainer(logger=neptune_legacy_logger)
         model = ...
         datamodule = ...
         trainer.fit(model, datamodule=datamodule)
@@ -149,11 +149,11 @@ class NeptuneLogger(Logger):
 
         # Log objects after `fit` or `test` methods
         # model summary
-        neptune_logger.log_model_summary(model=model, max_depth=-1)
+        neptune_legacy_logger.log_model_summary(model=model, max_depth=-1)
 
         # generic recipe
         metadata = ...
-        neptune_logger.experiment["your/metadata/structure"] = metadata
+        neptune_legacy_logger.experiment["your/metadata/structure"] = metadata
 
     **Log model checkpoints**
 
@@ -164,7 +164,7 @@ class NeptuneLogger(Logger):
 
     .. code-block:: python
 
-        neptune_logger = NeptuneLogger(log_model_checkpoints=False)
+        neptune_legacy_logger = NeptuneLegacyLogger(log_model_checkpoints=False)
 
     **Pass additional parameters to the Neptune run**
 
@@ -174,15 +174,15 @@ class NeptuneLogger(Logger):
         :skipif: not _NEPTUNE_AVAILABLE
 
         from lightning.pytorch import Trainer
-        from lightning.pytorch.loggers import NeptuneLogger
+        from lightning.pytorch.loggers import NeptuneLegacyLogger
 
-        neptune_logger = NeptuneLogger(
+        neptune_legacy_logger = NeptuneLegacyLogger(
             project="common/pytorch-lightning-integration",
             name="lightning-run",
             description="mlp quick run with pytorch-lightning",
             tags=["mlp", "quick-run"],
         )
-        trainer = Trainer(max_epochs=3, logger=neptune_logger)
+        trainer = Trainer(max_epochs=3, logger=neptune_legacy_logger)
 
     Check `run documentation <https://docs-legacy.neptune.ai/api/neptune/#init_run>`_
     for more info about additional run parameters.
@@ -238,7 +238,7 @@ class NeptuneLogger(Logger):
 
     def __init__(
         self,
-        *,  # force users to call `NeptuneLogger` initializer with `kwargs`
+        *,  # force users to call `NeptuneLegacyLogger` initializer with `kwargs`
         api_key: Optional[str] = None,
         project: Optional[str] = None,
         name: Optional[str] = None,
@@ -380,7 +380,7 @@ class NeptuneLogger(Logger):
         `Neptune docs <https://docs-legacy.neptune.ai/logging/methods>`_
         for more detailed explanations.
         You can also use the regular logger methods ``log_metrics()``, and ``log_hyperparams()``
-        with NeptuneLogger.
+        with NeptuneLegacyLogger.
 
         """
         return self.run
@@ -409,7 +409,7 @@ class NeptuneLogger(Logger):
         Note:
 
             You can also log parameters by directly using the logger instance:
-            ``neptune_logger.experiment["model/hyper-parameters"] = params_dict``.
+            ``neptune_legacy_logger.experiment["model/hyper-parameters"] = params_dict``.
 
             In this way you can keep hierarchical structure of the parameters.
 
@@ -419,7 +419,7 @@ class NeptuneLogger(Logger):
 
         Example::
 
-            from lightning.pytorch.loggers import NeptuneLogger
+            from lightning.pytorch.loggers import NeptuneLegacyLogger
             import neptune
 
             PARAMS = {
@@ -428,12 +428,12 @@ class NeptuneLogger(Logger):
                 "decay_factor": 0.97,
             }
 
-            neptune_logger = NeptuneLogger(
+            neptune_legacy_logger = NeptuneLegacyLogger(
                 api_key=neptune.ANONYMOUS_API_TOKEN,
                 project="common/pytorch-lightning-integration"
             )
 
-            neptune_logger.log_hyperparams(PARAMS)
+            neptune_legacy_logger.log_hyperparams(PARAMS)
 
         """
         from neptune.utils import stringify_unsupported
@@ -599,7 +599,7 @@ class NeptuneLogger(Logger):
         return self._run_short_id
 
 
-class NeptuneScaleLogger(Logger):
+class NeptuneLogger(Logger):
     r"""Log using `Neptune Scale <https://docs.neptune.ai/>`_.
 
     Install it with pip:
@@ -610,21 +610,21 @@ class NeptuneScaleLogger(Logger):
 
     **Quickstart**
 
-    Pass a NeptuneScaleLogger instance to the Trainer to log metadata with Neptune Scale:
+    Pass a NeptuneLogger instance to the Trainer to log metadata with Neptune Scale:
 
     .. code-block:: python
 
 
         from lightning.pytorch import Trainer
-        from lightning.pytorch.loggers import NeptuneScaleLogger
+        from lightning.pytorch.loggers import NeptuneLogger
 
-        neptune_scale_logger = NeptuneScaleLogger(
+        neptune_logger = NeptuneLogger(
             api_token="<YOUR_API_TOKEN>",
             project="<YOUR_WORKSPACE/YOUR_PROJECT>",
         )
-        trainer = Trainer(max_epochs=10, logger=neptune_scale_logger)
+        trainer = Trainer(max_epochs=10, logger=neptune_logger)
 
-    **How to use NeptuneScaleLogger?**
+    **How to use NeptuneLogger?**
 
     Use the logger anywhere in your :class:`~lightning.pytorch.core.LightningModule` as follows:
 
@@ -647,7 +647,7 @@ class NeptuneScaleLogger(Logger):
     Note that the syntax ``self.logger.run.log_metrics(data={"your/metadata/structure": metadata}, step=step)``
     is specific to Neptune Scale.
     Refer to the `Neptune Scale docs <https://docs.neptune.ai/log_metadata>`_ for details.
-    You can also use the regular logger methods ``log_metrics()``, and ``log_hyperparams()`` with NeptuneScaleLogger.
+    You can also use the regular logger methods ``log_metrics()``, and ``log_hyperparams()`` with NeptuneLogger.
 
     **Log after fitting or testing is finished**
 
@@ -655,9 +655,9 @@ class NeptuneScaleLogger(Logger):
 
     .. code-block:: python
 
-        neptune_scale_logger = NeptuneScaleLogger()
+        neptune_logger = NeptuneLogger()
 
-        trainer = pl.Trainer(logger=neptune_scale_logger)
+        trainer = pl.Trainer(logger=neptune_logger)
         model = ...
         datamodule = ...
         trainer.fit(model, datamodule=datamodule)
@@ -666,8 +666,8 @@ class NeptuneScaleLogger(Logger):
         # Log objects after `fit` or `test` methods
         # generic recipe
         metadata = ...
-        neptune_logger.run.log_configs(data={"your/metadata/structure": metadata})
-        neptune_logger.run.add_tags(["tag1", "tag2"])
+        neptune_legacy_logger.run.log_configs(data={"your/metadata/structure": metadata})
+        neptune_legacy_logger.run.add_tags(["tag1", "tag2"])
 
     **Log model checkpoint paths**
 
@@ -678,7 +678,7 @@ class NeptuneScaleLogger(Logger):
 
     .. code-block:: python
 
-        neptune_logger = NeptuneScaleLogger(log_model_checkpoints=False)
+        neptune_legacy_logger = NeptuneLogger(log_model_checkpoints=False)
 
     Note: All model checkpoint paths will be logged. ``save_last`` and ``save_top_k`` are currently not supported.
 
@@ -690,14 +690,14 @@ class NeptuneScaleLogger(Logger):
     .. code-block:: python
 
         from lightning.pytorch import Trainer
-        from lightning.pytorch.loggers import NeptuneScaleLogger
+        from lightning.pytorch.loggers import NeptuneLogger
 
-        neptune_scale_logger = NeptuneScaleLogger(
+        neptune_logger = NeptuneLogger(
             log_directory="logs",
             fork_run_id="fast-lightning-1",
             fork_step=420,
         )
-        trainer = Trainer(max_epochs=3, logger=neptune_scale_logger)
+        trainer = Trainer(max_epochs=3, logger=neptune_logger)
 
     Check `run documentation <https://docs.neptune.ai/run>`_ for more info about additional run
     parameters.
@@ -765,7 +765,7 @@ class NeptuneScaleLogger(Logger):
 
     def __init__(
         self,
-        *,  # force users to call `NeptuneScaleLogger` initializer with `kwargs`
+        *,  # force users to call `NeptuneLogger` initializer with `kwargs`
         run_id: Optional[str] = None,
         project: Optional[str] = None,
         api_token: Optional[str] = None,
@@ -822,15 +822,17 @@ class NeptuneScaleLogger(Logger):
 
     def _handle_neptune_sync_error(self, error: RuntimeError) -> None:
         """Handle Neptune Sync error in a multiprocessing context.
-        
+
         This method checks if the RuntimeError is the specific Neptune sync process error
         and handles it appropriately by setting the run instance to None and logging a debug message.
         If it's a different RuntimeError, it re-raises it.
-        
+
         Args:
             error: The RuntimeError that was caught
+
         """
         import traceback
+
         tb = traceback.format_exc()
         if "self._sync_process.start()" in tb and "neptune_scale" in tb:
             # This is the specific Neptune Scale sync process error we want to catch
@@ -935,7 +937,7 @@ class NeptuneScaleLogger(Logger):
         `Neptune Scale docs <https://docs.neptune.ai/log_metadata>`_
         for more detailed explanations.
         You can also use the regular logger methods ``log_metrics()``, and ``log_hyperparams()``
-        with NeptuneScaleLogger.
+        with NeptuneLogger.
 
         """
         from neptune_scale import Run
@@ -950,11 +952,10 @@ class NeptuneScaleLogger(Logger):
             except RuntimeError as e:
                 self._handle_neptune_sync_error(e)
 
-
         # For non-rank-0 processes, return None since no run was created
         if rank_zero_only.rank != 0:
             return None
-        
+
         return self._run_instance
 
     @override
@@ -968,7 +969,7 @@ class NeptuneScaleLogger(Logger):
 
             You can also log parameters by directly using the logger instance:
 
-            ``neptune_logger.run.log_configs(
+            ``neptune_legacy_logger.run.log_configs(
                 data={
                     "data/batch_size": 64,
                     "model/optimizer/name": "adam",
@@ -986,7 +987,7 @@ class NeptuneScaleLogger(Logger):
 
         Example::
 
-            from lightning.pytorch.loggers import NeptuneScaleLogger
+            from lightning.pytorch.loggers import NeptuneLogger
 
             PARAMS = {
                 "batch_size": 64,
@@ -994,9 +995,9 @@ class NeptuneScaleLogger(Logger):
                 "decay_factor": 0.97,
             }
 
-            neptune_scale_logger = NeptuneScaleLogger()
+            neptune_logger = NeptuneLogger()
 
-            neptune_scale_logger.log_hyperparams(PARAMS)
+            neptune_logger.log_hyperparams(PARAMS)
 
         """
 

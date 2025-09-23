@@ -30,8 +30,8 @@ The following are loggers we support:
     CometLogger
     CSVLogger
     MLFlowLogger
+    NeptuneLegacyLogger
     NeptuneLogger
-    NeptuneScaleLogger
     TensorBoardLogger
     WandbLogger
 
